@@ -3,20 +3,22 @@
 import { parseAllDocuments, stringify } from "npm:yaml@2.9.1";
 
 const FEED = "feed.yaml";
+const FORCE_DATES = Deno.env.get("FORCE_DATES") === "1";
+const DATE_CHUNK = 50;
 
 const toIso = (raw) =>
   /^\d{8}$/.test(raw)
     ? `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`
     : "";
 
-async function ytDlp(args) {
+async function ytDlp(args, { allowFailure = false } = {}) {
   const { stdout, success, code } = await new Deno.Command("yt-dlp", {
     args: ["--no-warnings", ...args],
     stdout: "piped",
     stderr: "inherit",
   }).output();
 
-  if (!success) {
+  if (!success && !allowFailure) {
     throw new Error(`yt-dlp a échoué (code ${code}) : ${args.join(" ")}`);
   }
 
@@ -41,17 +43,14 @@ async function uploadsPlaylistUrl(channelUrl) {
   return `https://www.youtube.com/playlist?list=UU${channelId.slice(2)}`;
 }
 
-async function listEntries(playlistUrl, lang, withDates) {
+async function listEntries(playlistUrl, lang) {
   const args = [
     "--flat-playlist",
     "-O",
-    '{"titre": %(title)j, "date": "%(upload_date|)s", "url": %(webpage_url)j}',
+    '{"titre": %(title)j, "url": %(webpage_url)j}',
     "--extractor-args",
     `youtube:lang=${lang}`,
   ];
-  if (withDates) {
-    args.push("--extractor-args", "youtubetab:approximate_date");
-  }
   args.push(playlistUrl);
 
   const out = await ytDlp(args);
@@ -61,13 +60,45 @@ async function listEntries(playlistUrl, lang, withDates) {
     .map((line) => JSON.parse(line));
 }
 
-async function fetchVideos(channelUrl) {
+const videoId = (url) => /[?&]v=([\w-]+)/.exec(url)?.[1] ?? url;
+
+async function fetchExactDates(urls) {
+  const dates = new Map();
+
+  for (let i = 0; i < urls.length; i += DATE_CHUNK) {
+    const chunk = urls.slice(i, i + DATE_CHUNK);
+    console.error(
+      `  exact dates ${Math.min(i + DATE_CHUNK, urls.length)}/${urls.length}`,
+    );
+    const out = await ytDlp(
+      [
+        "--skip-download",
+        "--no-playlist",
+        "--ignore-errors",
+        "--print",
+        "%(id)s|%(upload_date)s",
+        ...chunk,
+      ],
+      { allowFailure: true },
+    );
+
+    for (const line of out.split("\n").filter(Boolean)) {
+      const [id, raw] = line.split("|");
+      const iso = toIso(raw ?? "");
+      if (id && iso) dates.set(id, iso);
+    }
+  }
+
+  return dates;
+}
+
+async function fetchVideos(channelUrl, knownDates) {
   const playlistUrl = await uploadsPlaylistUrl(channelUrl);
-  const en = await listEntries(playlistUrl, "en", true);
-  const fr = await listEntries(playlistUrl, "fr", false);
+  const en = await listEntries(playlistUrl, "en");
+  const fr = await listEntries(playlistUrl, "fr");
   const frTitles = new Map(fr.map((entry) => [entry.url, entry.titre]));
 
-  return en
+  const videos = en
     .filter((entry) => !entry.url.includes("/shorts/"))
     .map((entry) => {
       const enTitle = entry.titre.trim();
@@ -76,8 +107,21 @@ async function fetchVideos(channelUrl) {
         frTitle && enTitle && frTitle !== enTitle
           ? { fr: frTitle, en: enTitle }
           : { fr: frTitle || enTitle };
-      return { title, date: toIso(entry.date), url: entry.url };
-    })
+      return { title, url: entry.url };
+    });
+
+  const missing = videos
+    .filter((video) => !knownDates.has(videoId(video.url)))
+    .map((video) => video.url);
+  const fetched = await fetchExactDates(missing);
+
+  for (const video of videos) {
+    const id = videoId(video.url);
+    video.date = knownDates.get(id) ?? fetched.get(id) ?? "";
+  }
+
+  return videos
+    .map((video) => ({ title: video.title, date: video.date, url: video.url }))
     .reverse();
 }
 
@@ -103,7 +147,9 @@ function mergeVideos(existing, fetched) {
   );
   const merged = fetched.map((video) => {
     const previous = existingByUrl.get(video.url);
-    return previous ? { ...video, ...userFields(previous) } : video;
+    return previous
+      ? { ...video, ...userFields(previous), date: video.date || previous.date }
+      : video;
   });
   const fetchedUrls = new Set(fetched.map((v) => v.url));
   const extras = existing
@@ -120,8 +166,19 @@ const rendered = [];
 for (const doc of docs) {
   const data = doc.toJS() ?? {};
   if (typeof data.url === "string" && data.url) {
+    const videos = data.videos ?? [];
+    const knownDates = FORCE_DATES
+      ? new Map()
+      : new Map(
+        videos
+          .filter((video) => video.url && video.date)
+          .map((video) => [videoId(video.url), video.date]),
+      );
     console.error(`→ ${data.url}`);
-    data.videos = mergeVideos(data.videos ?? [], await fetchVideos(data.url));
+    data.videos = mergeVideos(
+      videos,
+      await fetchVideos(data.url, knownDates),
+    );
   }
   rendered.push(stringify(data, { lineWidth: 0 }).trimEnd());
 }

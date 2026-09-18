@@ -1973,15 +1973,27 @@ videos:
       en: "Philosophy, intellectual onanism? (1/2) - PHILOSOPHY vs. SCIENCES - Grain de Philo #1"
     date: 2016-08-03
     url: https://www.youtube.com/watch?v=SR7DFabsU48
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: "Philosophie, onanisme intellectuel ? (2/2) - UN RÉSIDU DE QUESTIONS INSOLUBLES - Grain de philo #1"
       en: "Philosophy, intellectual masturbation? (2/2) - A RESIDUE OF UNSOLUBLE QUESTIONS - Grain de philo #1"
     date: 2016-08-04
     url: https://www.youtube.com/watch?v=H5VnO59U42o
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: "DESCARTES TE MET UN GROS DOUTE - Esprit et matière (1/5) - Grain de philo #2"
     date: 2016-08-11
     url: https://www.youtube.com/watch?v=ixbZNpgHjig
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: "LA CHOSE QUI PENSE - Esprit et matière (2/5) - Grain de philo #2"
       en: "THE THING THAT THINKS - Mind and Matter (2/5) - Grain de philo #2"
@@ -2007,19 +2019,35 @@ videos:
       en: "ARE WE SIMULATIONS? Nick Bostrom's simulation argument - Argument frappant #1"
     date: 2016-09-09
     url: https://www.youtube.com/watch?v=AtTTn7KMIys
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: "SI DIEU N'EXISTE PAS, TOUT EST PERMIS ? - Religion et morale (1/2) - Grain de philo #3"
     date: 2016-09-16
     url: https://www.youtube.com/watch?v=6U9WBN0Sck8
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: "LA RELIGION NOUS EMPÊCHE-T-ELLE D'ÊTRE MORAUX ? - Religion et morale (2/2) - Grain de philo #3"
       en: "DOES RELIGION PREVENT US FROM BEING MORAL? - Religion and Morality (2/2) - Grain de philo #3"
     date: 2016-09-28
     url: https://www.youtube.com/watch?v=Ffd55-hAaGE
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: "LE DROIT À L'AVORTEMENT - L'argument du violoniste (J.J. Thomson) - Argument frappant #2"
     date: 2016-10-16
     url: https://www.youtube.com/watch?v=mt4JXMcxlwI
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: LA NOVLANGUE dans 1984 d'Orwell
       en: Newspeak in Orwell's 1984
@@ -2030,16 +2058,28 @@ videos:
       en: "BAYES' LAW (1/2) - Striking Argument #3"
     date: 2016-11-13
     url: https://www.youtube.com/watch?v=3FOrWMDL8CY
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: "LA LOI DE BAYES (2/2) - Argument frappant #3"
       en: "BAYES' LAW (2/2) - Striking Argument #3"
     date: 2016-12-07
     url: https://www.youtube.com/watch?v=aU7EWwLtiOg
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: "ADAM SMITH : Le paradoxe de la veste de laine"
       en: "ADAM SMITH: The Wool Jacket Paradox"
     date: 2016-12-23
     url: https://www.youtube.com/watch?v=azNw7Vx1R8o
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: "ADAM SMITH : DIVISION DU TRAVAIL & MAIN INVISIBLE"
       en: "ADAM SMITH: DIVISION OF LABOR & INVISIBLE HAND"
@@ -2050,25 +2090,45 @@ videos:
       en: Free or determined?
     date: 2017-02-11
     url: https://www.youtube.com/watch?v=u3lapME67VI
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: "IDENTITÉ PERSONNELLE (1/2) - Téléportation, trous de mémoire & responsabilité - Grain de philo #7"
       en: "PERSONAL IDENTITY (1/2) - Teleportation, blackout & responsibility - Philosophical grain #7"
     date: 2017-02-26
     url: https://www.youtube.com/watch?v=EZmvdkNjev8
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: "IDENTITÉ PERSONNELLE (2/2) - Montez-vous dans le téléporteur ? - Grain de philo #7"
       en: "PERSONNAL IDENTITY (2/2) - Do you enter the teleporter? - Grain de philo #7"
     date: 2017-03-06
     url: https://www.youtube.com/watch?v=HPWQufM2sAg
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: 'LE PARADOXE DU CONDAMNÉ À MORT - Pour "e-penser" une seconde fois - Argument frappant #4'
       en: 'THE DEATHLY MAN PARADOX - To "e-think" a second time - Striking Argument #4'
     date: 2017-03-25
     url: https://www.youtube.com/watch?v=8SOGL5abq1Y
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: "LE PARADOXE DU CONDAMNÉ À MORT - Ep.2 - Argument frappant #4"
     date: 2017-04-06
     url: https://www.youtube.com/watch?v=ska8cx379XA
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: Ce palais est une idée
       en: This palace is an idea
@@ -2078,6 +2138,10 @@ videos:
       fr: "LE PRINCIPE DE CONDORCET (1/2) Une norme démocratique - Grain de philo #9"
     date: 2017-05-24
     url: https://www.youtube.com/watch?v=hI89r4LqaCc
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: BAC PHILO | 5 conseils pour ne pas rater sa DISSERTATION
       en: BAC PHILO | 5 tips to avoid failing your DISSERTATION
@@ -2096,6 +2160,10 @@ videos:
       en: "THE CONDORCET PRINCIPLE (2/2) Was Macron wrongly elected? - Grain de philo #9"
     date: 2017-07-02
     url: https://www.youtube.com/watch?v=ZZb4TjvupkI
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: "FAQ - Grain de philo : 1 an de la chaîne !"
       en: "FAQ - Grain de philo: 1 year of the channel!"
@@ -2121,11 +2189,19 @@ videos:
       en: "NIETZSCHE: The Morality of Winners? | Genealogy of Morality (1/2)"
     date: 2017-08-04
     url: https://www.youtube.com/watch?v=4kRY6vp99iY
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: NIETZSCHE contre les méchants | Généalogie de la morale (2/2)
       en: NIETZSCHE vs. The Bad Guys | Genealogy of Morals (2/2)
     date: 2017-08-14
     url: https://www.youtube.com/watch?v=XAaPkiiUTeI
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: VOTEZ pour le sujet de septembre
       en: VOTE for September's topic
@@ -2136,16 +2212,28 @@ videos:
       en: "TO EACH HIS OWN MORALITY? | Relativism vs. Realism | Grain de Philo #12"
     date: 2017-08-20
     url: https://www.youtube.com/watch?v=7KmAKVaO-Xc
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: LE PARADOXE DE LA BELLE AU BOIS DORMANT - Axiome 2 (extraits)
       en: THE SLEEPING BEAUTY PARADOX - Axiom 2 (excerpts)
     date: 2017-08-28
     url: https://www.youtube.com/watch?v=LocE6eog_z4
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: Jusqu'où serez-vous utilitariste ? (Ft. Science4All)
       en: How utilitarian will you be? (Ft. Science4All)
     date: 2017-09-04
     url: https://www.youtube.com/watch?v=AZBDMN5wZ-8
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: "ÊTES-VOUS ASSIS SUR DES ÉLECTRONS ? Réalisme scientifique (Ep.1) | Grain de philo #13"
     date: 2017-09-13
@@ -2160,21 +2248,37 @@ videos:
       en: "EVEN MORE UTILITARIST? | Striking Argument #6 (Ep.2)"
     date: 2017-09-22
     url: https://www.youtube.com/watch?v=y2l8lxi-9aY
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: Retour sur l'utilitarisme - Axiome 3 (extraits)
       en: Back to Utilitarianism - Axiom 3 (excerpts)
     date: 2017-10-01
     url: https://www.youtube.com/watch?v=mPBC0OQKa2w
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: "COMMENT DÉMONTRER N'IMPORTE QUOI | Grain de philo #14 (Ep.1)"
       en: "HOW TO PROVE ANYTHING | Grain de philo #14 (Ep. 1)"
     date: 2017-10-06
     url: https://www.youtube.com/watch?v=2DOYvDWZWwo
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: "LE SCEPTICISME - Le trilemme d'Agrippa | Grain de philo #14 (Ep.2)"
       en: "SKEPTICISM - Agrippa's Trilemma | Grain de philo #14 (Ep.2)"
     date: 2017-10-13
     url: https://www.youtube.com/watch?v=Gqu6Di353ok
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: VOTEZ pour le sujet de novembre !
       en: VOTE for November's topic!
@@ -2185,6 +2289,10 @@ videos:
       en: THE BERTRAND PARADOX - Axiom 3 (extracts)
     date: 2017-10-25
     url: https://www.youtube.com/watch?v=c86BtYw21RM
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: "IMAGES SUBLIMINALES | Grain de philo #15 (Ep.1)"
     date: 2017-11-02
@@ -2194,6 +2302,10 @@ videos:
       en: "CONSEQUENTIALISM - What is the purpose of morality? | Grain de philo #16"
     date: 2017-11-15
     url: https://www.youtube.com/watch?v=3hCffvguLTQ
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: "VOTEZ : série et philosophie"
       en: "VOTE: series and philosophy"
@@ -2214,6 +2326,10 @@ videos:
       en: "AXIOMATICS - Euclid's Elements | Grain of Philosophy #14 (Ep.4)"
     date: 2017-12-11
     url: https://www.youtube.com/watch?v=enZpq8jvFEs
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: VOTEZ pour une expérience de pensée !
       en: VOTE for a thought experiment!
@@ -2233,6 +2349,10 @@ videos:
       en: "The Experience Machine, a Robert Nozick book :  Stricking Argumentetion #7"
     date: 2018-01-18
     url: https://www.youtube.com/watch?v=2FVwXaNWPQ0
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: VOTEZ pour le sujet de février
     date: 2018-01-24
@@ -2349,6 +2469,10 @@ videos:
       en: Who SHOULD win the World Cup? FOOTBALL & UTILITARIANISM
     date: 2018-07-12
     url: https://www.youtube.com/watch?v=Pn-2GQbgQhY
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: FAQ de la mort !
       en: FAQ from the dead!
@@ -2359,6 +2483,10 @@ videos:
       en: '"It is better to be a dissatisfied Socrates than a satisfied fool." John Stuart Mill | Dixit 2'
     date: 2018-07-27
     url: https://www.youtube.com/watch?v=NpUcdhbcmuI
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: "De quoi la RÉALITÉ est-elle le nom ? | Grain de philo #20"
       en: "What is REALITY the name of? | Grain de philo #20"
@@ -2374,6 +2502,10 @@ videos:
       en: This probabilistic argument can change how you think about ANIMAL ETHICS
     date: 2018-09-01
     url: https://www.youtube.com/watch?v=HaVWbdlAiCQ
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: "Les objections : tout ce qui ne va pas dans cet argument"
       en: "Objections: Everything wrong with this argument"
@@ -2397,11 +2529,19 @@ videos:
       fr: "La VÉRITÉ nue | Grain de philo #21"
     date: 2018-11-11
     url: https://www.youtube.com/watch?v=aUdshz5gD2s
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: "La théorie peut-elle réfuter l'expérience ? | Grain de philo #22"
       en: "Can theory refute experience? | Grain de philo #22"
     date: 2018-11-27
     url: https://www.youtube.com/watch?v=SXLHijQeYok
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: "Pas de cadeaux pour Noël ! | Argument frappant #10"
       en: "No presents for Christmas! | Striking argument #10"
@@ -2446,6 +2586,10 @@ videos:
       en: "An extraordinary claim requires MORE than extraordinary evidence | Hume - Dixit #3"
     date: 2019-04-06
     url: https://www.youtube.com/watch?v=8RwnrNSqa_A
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: "RETOUR SUR LE PARADOXE DES DEUX ENFANTS (et le Monty Hall) - Argument frappant #11 (ep.2)"
     date: 2019-04-20
@@ -2512,11 +2656,19 @@ videos:
       en: "YOU MUST! — the categorical imperative according to Kant | Grain de philo #31"
     date: 2019-10-17
     url: https://www.youtube.com/watch?v=Hj7JDMlJjJE
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: "L'EUGÉNISME LIBÉRAL - Grain de philo #32"
       en: "LIBERAL EUGENICS - A Grain of Philo #32"
     date: 2019-11-19
     url: https://www.youtube.com/watch?v=GsUsgx2oPYA
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: Êtes-vous des eugénistes hardcore ?
       en: Are you hardcore eugenicists?
@@ -2536,6 +2688,10 @@ videos:
       en: The philosophy in 'The Good Place' (no spoilers)
     date: 2020-01-31
     url: https://www.youtube.com/watch?v=9FFI9bwYuK0
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: "Qu'est-ce que la philosophie expérimentale ? | Café Phi #3 avec Florian Cova"
       en: "What is experimental philosophy? | Café Phi #3 with Florian Cova"
@@ -2573,6 +2729,10 @@ videos:
       en: Can you be wrong in saying "I'm in pain"? (No. And that poses a strange problem.)
     date: 2020-07-10
     url: https://www.youtube.com/watch?v=JlSXc9hf1bE
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: La philosophie morale ne sert à rien ? (ft. Valentine de Science de Comptoir)
       en: Is moral philosophy useless? (ft. Valentine from Science de Comptoir)
@@ -2588,6 +2748,10 @@ videos:
       en: '"A people who sacrifice a little freedom for a little security..."'
     date: 2020-09-06
     url: https://www.youtube.com/watch?v=BT-ZsfT2Sn8
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: "LE PRÉSENT N'EXISTE PAS | Café Phi #4 avec Baptiste Le Bihan"
     date: 2020-09-20
@@ -2596,6 +2760,10 @@ videos:
       fr: Est-on LIBRE de se soigner quand on n'en a pas les moyens ?
     date: 2020-10-01
     url: https://www.youtube.com/watch?v=KHJPHBbghtw
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: "Peut-on faire de la philo avec les enfants ? | Café Phi #6 ft. Edukey"
       en: "Can we do philosophy with children? | Café Phi #6 ft. Edukey"
@@ -2628,6 +2796,10 @@ videos:
       fr: « Tous les modèles sont faux, mais certains sont utiles » + reupload de LA VÉRITÉ NUE
     date: 2021-02-07
     url: https://www.youtube.com/watch?v=L2fGosqJp2Q
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: Le dilemme du prisonnier et le paradoxe de la coopération
       en: The Prisoner's Dilemma and the Paradox of Cooperation
@@ -2647,6 +2819,10 @@ videos:
       en: Philosophers don't get what is FREE WILL
     date: 2021-05-14
     url: https://www.youtube.com/watch?v=FuqIY-Xf5Is
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: "Expérience interactive : comment noter une copie de philo ? 🎲"
     date: 2021-05-30
@@ -2671,6 +2847,10 @@ videos:
       en: This principle on which everyone agrees
     date: 2021-08-01
     url: https://www.youtube.com/watch?v=JY3SAzlgBYY
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: Les vaccins nous feront-ils changer d'R ?
       en: Will vaccines make us change our R?
@@ -2680,11 +2860,19 @@ videos:
       fr: Deux formes de liberté d'expression
     date: 2021-09-19
     url: https://www.youtube.com/watch?v=c5JfOHyfFP0
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: Un point aveugle moral
       en: A Moral Blind Spot
     date: 2021-10-17
     url: https://www.youtube.com/watch?v=2zZRFJ1oXHA
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: Cette histoire va vous retourner le cerveau. | "Où suis-je" de Daniel Dennett
       en: This story will blow your mind. | "Where Am I?" by Daniel Dennett
@@ -2695,6 +2883,10 @@ videos:
       en: "Are there any REAL colors? | #Shorts"
     date: 2021-11-18
     url: https://www.youtube.com/watch?v=KP56Vpzar2U
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: "Une expérience de pensée renversante : l'argument du spectre inversé 🟥🟧🟨🟩🟦🟪"
       en: What do I see ? | The inverted spectrum argument
@@ -2714,6 +2906,10 @@ videos:
       en: "Can an action be WORSE because it is BENEFICIAL? #shorts"
     date: 2022-01-27
     url: https://www.youtube.com/watch?v=mKte5W9zmbs
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: Socrate, l'homme qui en savait trop peu
       en: Socrates, the man who knew too little
@@ -2724,6 +2920,10 @@ videos:
       en: Two notions of JUSTICE (and why neither justifies inheritance)
     date: 2022-02-27
     url: https://www.youtube.com/watch?v=Aj7PKDTrbjQ
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: Le progrès des sciences nous condamne-t-il à l'apocalypse ? ⚛️
       en: Are we doomed to apocalypse because of scientific progress ? | Bostrom's Vulnerable World Hypothesis
@@ -2772,6 +2972,10 @@ videos:
       en: Can we democratically deprive women of the freedom to have an abortion?
     date: 2022-07-01
     url: https://www.youtube.com/watch?v=5261f9uoeac
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: Le problème de la MER DU JAPON (c'est plus intéressant que ça en a l'air !) ft. @Vous Avez Le Droit​
       en: The sea of Japan does not exist
@@ -2839,6 +3043,10 @@ videos:
       fr: Milliardaire et stoïcien | Sénèque
     date: 2023-07-09
     url: https://www.youtube.com/watch?v=iE08wLRGPcQ
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: La preuve définitive que ChatGPT ne comprend rien
     date: 2023-08-01
@@ -2852,6 +3060,10 @@ videos:
       fr: Le problème de la chance morale 🎲
     date: 2023-10-25
     url: https://www.youtube.com/watch?v=avTMg2THEvM
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: Cette histoire vous fera des noeuds au cerveau.
     date: 2023-12-05
@@ -2874,6 +3086,10 @@ videos:
       fr: Une expérience de philosophie morale
     date: 2024-02-27
     url: https://www.youtube.com/watch?v=GJAQCRJZmic
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: ChatGPT rêve-t-il de cavaliers électriques ?
       en: Do ChatGPT dreams of electric sheep?
@@ -2919,11 +3135,19 @@ videos:
       en: Why this pill dilemma is driving us crazy
     date: 2025-05-02
     url: https://www.youtube.com/watch?v=lo7iJnq_U9M
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: Comment parler intelligemment d'intelligence ?
       en: How to talk intelligently about intelligence?
     date: 2025-07-05
     url: https://www.youtube.com/watch?v=AwUpxjODogQ
+    download_vtt:
+      fr: true
+    generate_markdown:
+      fr: true
   - title:
       fr: "Luc Julia au Sénat : autopsie d'un grand N'IMPORTE QUOI"
       en: "Luc Julia in the Senate: autopsy of a great NONSENSE"

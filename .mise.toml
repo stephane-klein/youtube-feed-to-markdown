@@ -1,0 +1,7 @@
+[tools]
+yt-dlp = "2026.08.19"
+deno = "2.9.7"
+
+[tasks.extract-video-metadata]
+description = "Alimente les listes videos de feed.yaml depuis les chaînes YouTube"
+run = "scripts/extract-video-metadata.js"

@@ -176,6 +176,8 @@ videos:
       en: "Is the ground really accelerating upwards? #Let'sDebateBetter"
     date: 2016-09-19
     url: https://www.youtube.com/watch?v=KOOAAo1v9fE
+    download_vtt:
+      fr: true
   - title:
       fr: Les trous noirs | Relativité 24
     date: 2016-09-19
@@ -219,6 +221,8 @@ videos:
       en: "Synonyms with opposite connotations #Let'sDebateBetter"
     date: 2016-09-19
     url: https://www.youtube.com/watch?v=wg1G5qrEjB0
+    download_vtt:
+      fr: true
   - title:
       fr: Une pile de cartes qui tend vers l'infini ? Infini 3
       en: A stack of cards that stretches to infinity? Infinity 3
@@ -359,6 +363,8 @@ videos:
       en: The Invisible Hand of a Malicious Mathematician | Democracy 1
     date: 2017-09-19
     url: https://www.youtube.com/watch?v=fBYCoPAmpr4
+    download_vtt:
+      fr: true
   - title:
       fr: Nos démocraties divisent | Démocratie 2
     date: 2017-09-19
@@ -402,6 +408,8 @@ videos:
       en: The Fundamental Principle of Politics | Democracy 8
     date: 2017-09-19
     url: https://www.youtube.com/watch?v=4dxwQkrUXpY
+    download_vtt:
+      fr: true
   - title:
       fr: Haïssez le jeu. Pas les joueurs. Démocratie 9
       en: Hate the game. Not the Players. Democracy episode 9
@@ -412,6 +420,8 @@ videos:
       en: Are you a political hooligan? Democracy 101
     date: 2017-09-19
     url: https://www.youtube.com/watch?v=0WfcgfGTMlY
+    download_vtt:
+      fr: true
   - title:
       fr: Rationnellement irrationnels | Démocratie 11
       en: Rationally Irrational | Democracy 11
@@ -429,11 +439,15 @@ videos:
       fr: L'équilibre de Nash | Démocratie 13
     date: 2017-09-19
     url: https://www.youtube.com/watch?v=9dXCvjL04uw
+    download_vtt:
+      fr: true
   - title:
       fr: Top 10 de la théorie des jeux | Démocratie 14
       en: Top 10 Game Theory | Democracy 14
     date: 2017-09-19
     url: https://www.youtube.com/watch?v=uijJJ2OczNs
+    download_vtt:
+      fr: true
   - title:
       fr: Le poker résolu ! (ou non) | Démocratie 15
       en: Poker Solved! (Or Not) | Democracy 15
@@ -444,11 +458,15 @@ videos:
       en: "Intuition: to take or leave? #Let'sDebateBetter"
     date: 2017-09-19
     url: https://www.youtube.com/watch?v=sSfg-rpvO2M
+    download_vtt:
+      fr: true
   - title:
       fr: Le prix de l'anarchie | Démocratie 16
       en: The Price of Anarchy | Democracy 16
     date: 2017-09-19
     url: https://www.youtube.com/watch?v=1onCF9PfiAo
+    download_vtt:
+      fr: true
   - title:
       fr: Le problème des mariages stables | Démocratie 17
       en: The Problem with Stable Marriages | Democracy 17
@@ -458,6 +476,8 @@ videos:
       fr: Favoriser l'honnêteté | Démocratie 18
     date: 2017-09-19
     url: https://www.youtube.com/watch?v=zRMPT9ksAsA
+    download_vtt:
+      fr: true
   - title:
       fr: La négociation optimale | Démocratie 19
     date: 2017-09-19
@@ -476,24 +496,34 @@ videos:
       en: But, what exactly is fair? Democracy 21
     date: 2017-09-19
     url: https://www.youtube.com/watch?v=rgzWqAyZW7o
+    download_vtt:
+      fr: true
   - title:
       fr: Partager un gâteau, c'est pas du gâteau ! Démocratie 22
       en: Sharing a cake isn't easy! Democracy 22
     date: 2017-09-19
     url: https://www.youtube.com/watch?v=kefptSDi0Es
+    download_vtt:
+      fr: true
   - title:
       fr: La méritocratie mathématique | Démocratie 23
       en: Mathematical Meritocracy | Democracy 23
     date: 2017-09-19
     url: https://www.youtube.com/watch?v=DHw-dvrAv58
+    download_vtt:
+      fr: true
   - title:
       fr: Une justice SANS libre-arbitre ? Démocratie 24
     date: 2017-09-19
     url: https://www.youtube.com/watch?v=QMIfjUerDzY
+    download_vtt:
+      fr: true
   - title:
       fr: Le paradoxe de la morale | Démocratie 25 (ft. @EvoSapiensFR)
     date: 2017-09-19
     url: https://www.youtube.com/watch?v=W-GAqomxGmo
+    download_vtt:
+      fr: true
   - title:
       fr: La Grande Histoire des petites histoires | Démocratie 26 (ft. Sylvie Mombo)
       en: The Grand History of Little Stories | Democracy 26 (ft. Sylvie Mombo)
@@ -509,6 +539,8 @@ videos:
       en: "The Morality of Happy People: Utilitarianism | Democracy 28 (ft. @MonsieurPhi)"
     date: 2017-09-19
     url: https://www.youtube.com/watch?v=Uu6K0uR9bus
+    download_vtt:
+      fr: true
   - title:
       fr: "Axiome : Mr Phi et moi en podcast !!"
     date: 2017-09-19
@@ -528,20 +560,28 @@ videos:
       en: 7 arguments AGAINST democracy | Democracy 3/3
     date: 2018-09-19
     url: https://www.youtube.com/watch?v=fYioC7v1F3U
+    download_vtt:
+      fr: true
   - title:
       fr: Wikipedia et l'épistocratie | Démocratie 31 (ft. Adrien Coffinet)
       en: Wikipedia and Epistocracy | Democracy 31 (ft. Adrien Coffinet)
     date: 2018-09-19
     url: https://www.youtube.com/watch?v=7yztDRsarcY
+    download_vtt:
+      fr: true
   - title:
       fr: L'étendue de mon ignorance | Démocratie 32
       en: The Extent of My Ignorance | Democracy 32
     date: 2018-09-19
     url: https://www.youtube.com/watch?v=BVbAYIT92Ws
+    download_vtt:
+      fr: true
   - title:
       fr: On récapitule TOUT | Démocratie 33
     date: 2018-09-19
     url: https://www.youtube.com/watch?v=QyrrvEuRNWU
+    download_vtt:
+      fr: true
   - title:
       fr: J'aime les maths | τ^τ abonnés !! (ft. YouTube)
     date: 2018-09-19
@@ -567,6 +607,8 @@ videos:
       en: Hobbitism (excerpt from @axiome7403 4) | Democracy 34
     date: 2018-09-19
     url: https://www.youtube.com/watch?v=yXEdspuLHsY
+    download_vtt:
+      fr: true
   - title:
       fr: Humains versus machines | Intelligence Artificielle 1
     date: 2018-09-19

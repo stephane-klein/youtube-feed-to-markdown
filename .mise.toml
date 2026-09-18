@@ -5,3 +5,7 @@ deno = "2.9.7"
 [tasks.extract-video-metadata]
 description = "Alimente les listes videos de feed.yaml depuis les chaînes YouTube"
 run = "scripts/extract-video-metadata.js"
+
+[tasks.download_vtt]
+description = "Télécharge les transcripts VTT des vidéos marquées download_vtt"
+run = "scripts/download-vtt.js"

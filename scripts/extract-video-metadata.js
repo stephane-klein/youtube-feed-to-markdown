@@ -89,12 +89,27 @@ function normalizeEntry(entry) {
   return entry;
 }
 
+const MANAGED_KEYS = new Set(["title", "date", "url", "titre"]);
+
+function userFields(entry) {
+  return Object.fromEntries(
+    Object.entries(entry).filter(([key]) => !MANAGED_KEYS.has(key)),
+  );
+}
+
 function mergeVideos(existing, fetched) {
+  const existingByUrl = new Map(
+    existing.filter((v) => v.url).map((v) => [v.url, v]),
+  );
+  const merged = fetched.map((video) => {
+    const previous = existingByUrl.get(video.url);
+    return previous ? { ...video, ...userFields(previous) } : video;
+  });
   const fetchedUrls = new Set(fetched.map((v) => v.url));
   const extras = existing
     .filter((v) => v.url && !fetchedUrls.has(v.url))
     .map(normalizeEntry);
-  return [...fetched, ...extras].sort((a, b) =>
+  return [...merged, ...extras].sort((a, b) =>
     (a.date ?? "").localeCompare(b.date ?? ""),
   );
 }

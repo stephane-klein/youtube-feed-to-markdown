@@ -13,10 +13,10 @@
     "node": ">=22"
   },
   "scripts": {
-    "extract-video-metadata": "node scripts/extract-video-metadata.js",
-    "download-vtt": "node scripts/download-vtt.js",
-    "generate-markdown": "node scripts/generate-markdown.js",
-    "markdown-stats": "node scripts/markdown-stats.js"
+    "extract-video-metadata": "node src/extract-video-metadata.js",
+    "download-vtt": "node src/download-vtt.js",
+    "generate-markdown": "node src/generate-markdown.js",
+    "markdown-stats": "node src/markdown-stats.js"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "~3.0.51",

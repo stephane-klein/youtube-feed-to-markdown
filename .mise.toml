@@ -12,16 +12,16 @@ node = "24.21.0"
 
 [tasks.extract-video-metadata]
 description = "Alimente les listes videos de feed.yaml depuis les chaînes YouTube"
-run = "scripts/extract-video-metadata.js"
+run = "src/extract-video-metadata.js"
 
 [tasks.download_vtt]
 description = "Télécharge les transcripts VTT des vidéos marquées download_vtt"
-run = "scripts/download-vtt.js"
+run = "src/download-vtt.js"
 
 [tasks.generate_markdown]
 description = "Transforme les transcripts VTT en prose Markdown via ai-sdk"
-run = "scripts/generate-markdown.js"
+run = "src/generate-markdown.js"
 
 [tasks.markdown_stats]
 description = "Rapport global (tokens, coût, temps) depuis les frontmatter de contents/"
-run = "scripts/markdown-stats.js"
+run = "src/markdown-stats.js"

@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { APICallError, generateText } from "ai";
@@ -14,8 +12,6 @@ import {
   writeMarker,
 } from "./vtt.js";
 
-const FEED = "feed.yaml";
-
 const SYSTEM = [
   "You convert a YouTube video transcript into clean, readable Markdown prose.",
   "- Write in the same language as the transcript.",
@@ -26,34 +22,6 @@ const SYSTEM = [
   "- Do not wrap the output in code fences.",
   "- Output only the Markdown body.",
 ].join("\n");
-
-const apiKey = process.env.OPENAI_API_KEY;
-const modelId = process.env.OPENAIAPI_MODEL_ID;
-const endpoint = process.env.OPENAIAPI_ENDPOINT;
-const session = process.env.X_OPENCODE_SESSION;
-
-if (!apiKey) throw new Error("OPENAI_API_KEY is not set");
-if (!modelId) throw new Error("OPENAIAPI_MODEL_ID is not set");
-if (!endpoint) throw new Error("OPENAIAPI_ENDPOINT is not set");
-
-const llmConcurrency = Number(process.env.OPENAIAPI_CONCURRENCY ?? 6);
-const vttConcurrency = Number(process.env.YTDLP_CONCURRENCY ?? 2);
-const FORCE_MARKDOWN = process.env.FORCE_MARKDOWN === "1";
-const RETRY_DELAYS = (process.env.OPENAIAPI_RETRY_DELAYS ?? "10,30,60")
-  .split(",")
-  .map((value) => value.trim())
-  .filter(Boolean)
-  .map((value) => Number(value) * 1000)
-  .filter((value) => Number.isFinite(value) && value >= 0);
-
-const provider = createOpenAICompatible({
-  name: "opencode",
-  apiKey,
-  baseURL: endpoint.replace(/\/chat\/completions\/?$/, ""),
-  headers: session ? { "X-OpenCode-Session": session } : {},
-});
-
-const model = provider(modelId);
 
 const WIDTH = 80;
 
@@ -66,7 +34,7 @@ function cachedInputTokens(usage) {
   return details.cacheReadTokens ?? usage?.cachedInputTokens ?? 0;
 }
 
-function estimateCost(usage) {
+function estimateCost(modelId, usage) {
   const price = PRICES[modelId];
   if (!price || !usage) return null;
 
@@ -86,9 +54,10 @@ const OUTPUT_FACTOR = 2;
 const OUTPUT_FLOOR = 2048;
 const OUTPUT_CEILING = 32768;
 
-function outputBudget(transcript) {
-  const override = process.env.OPENAIAPI_MAX_OUTPUT_TOKENS;
-  if (override) return Number(override);
+function outputBudget(transcript, override) {
+  if (override !== undefined && override !== null && override !== "") {
+    return Number(override);
+  }
 
   const inputTokens = Math.ceil(transcript.length / 3.5);
   return Math.min(
@@ -97,7 +66,7 @@ function outputBudget(transcript) {
   );
 }
 
-function metricsLine(usage, elapsed, cost) {
+function metricsLine(modelId, usage, elapsed, cost) {
   return [
     modelId,
     `llm ${elapsed.toFixed(1)}s`,
@@ -110,7 +79,7 @@ function metricsLine(usage, elapsed, cost) {
     .join("  ");
 }
 
-function frontmatter(job, { usage, elapsed, cost, finishReason }) {
+function frontmatter(job, { modelId, usage, elapsed, cost, finishReason }) {
   const data = {
     source_url: job.url,
     video_title: titleForLang(job.titles, job.lang),
@@ -222,8 +191,22 @@ function describeError(error, attempts) {
   return `${status} ${error.message}${suffix}${body ? `: ${body}` : ""}`;
 }
 
-async function toMarkdown(title, transcript, onRetry) {
-  const totalAttempts = RETRY_DELAYS.length + 1;
+function parseRetryDelays(value) {
+  return `${value}`
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .map((item) => Number(item) * 1000)
+    .filter((item) => Number.isFinite(item) && item >= 0);
+}
+
+async function toMarkdown(
+  { model, retryDelays, maxOutputTokens },
+  title,
+  transcript,
+  onRetry,
+) {
+  const totalAttempts = retryDelays.length + 1;
 
   for (let attempt = 1;; attempt++) {
     const started = performance.now();
@@ -233,7 +216,7 @@ async function toMarkdown(title, transcript, onRetry) {
         system: SYSTEM,
         prompt: `Title: ${title}\n\nTranscript:\n${transcript}`,
         temperature: 0.2,
-        maxOutputTokens: outputBudget(transcript),
+        maxOutputTokens: outputBudget(transcript, maxOutputTokens),
         maxRetries: 0,
       });
       const elapsed = (performance.now() - started) / 1000;
@@ -246,63 +229,15 @@ async function toMarkdown(title, transcript, onRetry) {
 
       return { body, usage, finishReason, elapsed };
     } catch (error) {
-      if (!isRetryable(error) || attempt > RETRY_DELAYS.length) {
+      if (!isRetryable(error) || attempt > retryDelays.length) {
         throw new Error(describeError(error, attempt), { cause: error });
       }
-      const waitMs = retryDelayMs(error, RETRY_DELAYS[attempt - 1]);
+      const waitMs = retryDelayMs(error, retryDelays[attempt - 1]);
       onRetry?.(attempt + 1, totalAttempts, waitMs);
       await delay(waitMs);
     }
   }
 }
-
-await mkdir(DIR, { recursive: true });
-
-const docs = parseAllDocuments(await readFile(FEED, "utf8"));
-const jobs = [];
-
-for (const doc of docs) {
-  const data = doc.toJS() ?? {};
-  for (const video of data.videos ?? []) {
-    if (!video.generate_markdown) continue;
-    jobs.push(...videoJobs(video));
-  }
-}
-
-console.error(`${jobs.length} markdown(s) to generate with ${modelId}`);
-
-const stats = {
-  generated: 0,
-  already: 0,
-  skipped: 0,
-  errors: 0,
-  totalSeconds: 0,
-  totalInput: 0,
-  totalOutput: 0,
-  totalCost: 0,
-  costKnown: true,
-};
-
-const rendererOptions = {
-  logger: new ListrLogger({
-    processOutput: new ProcessOutput(process.stderr, process.stderr),
-  }),
-  showErrorMessage: true,
-  collapseErrors: false,
-  collapseSkips: false,
-  icon: {
-    SKIPPED: "–",
-    SKIPPED_WITH_COLLAPSE: "–",
-    SKIPPED_WITHOUT_COLLAPSE: "–",
-  },
-  color: {
-    SKIPPED: (message) => message,
-    SKIPPED_WITH_COLLAPSE: (message) => message,
-    SKIPPED_WITHOUT_COLLAPSE: (message) => message,
-  },
-};
-
-const phaseOptions = { outputBar: 20, persistentOutput: true };
 
 async function forEachConcurrent(items, limit, worker) {
   let next = 0;
@@ -316,140 +251,226 @@ async function forEachConcurrent(items, limit, worker) {
   );
 }
 
-const pending = [];
-for (const job of jobs) {
-  if (!FORCE_MARKDOWN && (await exists(`${job.base}.md`))) stats.already++;
-  else pending.push(job);
-}
+export async function runGenerateMarkdown({
+  feed = "feed.yaml",
+  model: modelId,
+  endpoint,
+  apiKey,
+  session,
+  concurrency = 6,
+  ytdlpConcurrency = 2,
+  retryDelays = "10,30,60",
+  maxOutputTokens,
+  force = false,
+} = {}) {
+  const key = apiKey ?? process.env.OPENAI_API_KEY;
+  if (!key) throw new Error("api key is not set (--api-key or OPENAI_API_KEY)");
+  if (!modelId) throw new Error("model is not set (--model)");
+  if (!endpoint) throw new Error("endpoint is not set (--endpoint)");
 
-const downloadTask = {
-  title: "Download transcripts",
-  rendererOptions: phaseOptions,
-  task: async (_ctx, task) => {
-    const total = jobs.length;
-    if (total === 0) {
-      task.skip("no video");
-      return;
+  const RETRY_DELAYS = parseRetryDelays(retryDelays);
+  const llmConcurrency = Number(concurrency);
+  const vttConcurrency = Number(ytdlpConcurrency);
+
+  const provider = createOpenAICompatible({
+    name: "opencode",
+    apiKey: key,
+    baseURL: endpoint.replace(/\/chat\/completions\/?$/, ""),
+    headers: session ? { "X-OpenCode-Session": session } : {},
+  });
+
+  const model = provider(modelId);
+
+  await mkdir(DIR, { recursive: true });
+
+  const docs = parseAllDocuments(await readFile(feed, "utf8"));
+  const jobs = [];
+
+  for (const doc of docs) {
+    const data = doc.toJS() ?? {};
+    for (const video of data.videos ?? []) {
+      if (!video.generate_markdown) continue;
+      jobs.push(...videoJobs(video));
     }
+  }
 
-    const pendingSet = new Set(pending);
-    let available = 0;
-    const items = [];
-    for (const job of jobs) {
-      if (await exists(job.vtt)) {
-        available++;
-      } else if (pendingSet.has(job)) {
-        items.push(job);
+  console.error(`${jobs.length} markdown(s) to generate with ${modelId}`);
+
+  const stats = {
+    generated: 0,
+    already: 0,
+    skipped: 0,
+    errors: 0,
+    totalSeconds: 0,
+    totalInput: 0,
+    totalOutput: 0,
+    totalCost: 0,
+    costKnown: true,
+  };
+
+  const rendererOptions = {
+    logger: new ListrLogger({
+      processOutput: new ProcessOutput(process.stderr, process.stderr),
+    }),
+    showErrorMessage: true,
+    collapseErrors: false,
+    collapseSkips: false,
+    icon: {
+      SKIPPED: "–",
+      SKIPPED_WITH_COLLAPSE: "–",
+      SKIPPED_WITHOUT_COLLAPSE: "–",
+    },
+    color: {
+      SKIPPED: (message) => message,
+      SKIPPED_WITH_COLLAPSE: (message) => message,
+      SKIPPED_WITHOUT_COLLAPSE: (message) => message,
+    },
+  };
+
+  const phaseOptions = { outputBar: 20, persistentOutput: true };
+
+  const pending = [];
+  for (const job of jobs) {
+    if (!force && (await exists(`${job.base}.md`))) stats.already++;
+    else pending.push(job);
+  }
+
+  const downloadTask = {
+    title: "Download transcripts",
+    rendererOptions: phaseOptions,
+    task: async (_ctx, task) => {
+      const total = jobs.length;
+      if (total === 0) {
+        task.skip("no video");
+        return;
       }
-    }
-    task.title = `Download transcripts (${available}/${total})`;
 
-    await forEachConcurrent(items, vttConcurrency, async (job) => {
-      const name = `${job.base.slice(DIR.length + 1)}.md`;
-      try {
-        if (await exists(job.marker)) {
-          stats.skipped++;
-          task.output = `skipped (no transcript)  ${name}`;
-          return;
-        }
-
-        const status = await downloadVtt(job.url, job.lang, job.vtt);
-        if (status === "missing") {
-          await writeMarker(job.marker, job.url);
-          stats.skipped++;
-          task.output = `skipped (no transcript)  ${name}`;
-        } else if (status === "error") {
-          stats.errors++;
-          task.output = `error (download failed)  ${name}`;
-        } else {
+      const pendingSet = new Set(pending);
+      let available = 0;
+      const items = [];
+      for (const job of jobs) {
+        if (await exists(job.vtt)) {
           available++;
-          task.output = `downloaded  ${name}`;
+        } else if (pendingSet.has(job)) {
+          items.push(job);
         }
-      } catch (error) {
-        stats.errors++;
-        task.output = `error (${error.message})  ${name}`;
-      } finally {
-        task.title = `Download transcripts (${available}/${total})`;
       }
-    });
-  },
-};
+      task.title = `Download transcripts (${available}/${total})`;
 
-const generateTask = {
-  title: "Generate markdown",
-  rendererOptions: phaseOptions,
-  task: async (_ctx, task) => {
-    const items = [];
-    for (const job of pending) {
-      if (await exists(job.vtt)) items.push(job);
-    }
-    if (items.length === 0) {
-      task.skip("nothing to generate");
-      return;
-    }
+      await forEachConcurrent(items, vttConcurrency, async (job) => {
+        const name = `${job.base.slice(DIR.length + 1)}.md`;
+        try {
+          if (await exists(job.marker)) {
+            stats.skipped++;
+            task.output = `skipped (no transcript)  ${name}`;
+            return;
+          }
 
-    const already = stats.already > 0 ? `, ${stats.already} already` : "";
-    task.title =
-      `Generate markdown (${stats.already}/${jobs.length}${already})`;
-    await forEachConcurrent(items, llmConcurrency, async (job) => {
-      const name = `${job.base.slice(DIR.length + 1)}.md`;
-      const md = `${job.base}.md`;
-      try {
-        const transcript = vttToText(await readFile(job.vtt, "utf8"));
-        const { body, usage, finishReason, elapsed } = await toMarkdown(
-          job.title,
-          transcript,
-          (nextAttempt, totalAttempts, waitMs) => {
-            task.output = `retrying in ${Math.round(waitMs / 1000)}s ` +
-              `(attempt ${nextAttempt}/${totalAttempts})  ${name}`;
-          },
-        );
-
-        stats.totalSeconds += elapsed;
-        stats.totalInput += usage?.inputTokens ?? 0;
-        stats.totalOutput += usage?.outputTokens ?? 0;
-        const cost = estimateCost(usage);
-        if (cost === null) stats.costKnown = false;
-        else stats.totalCost += cost;
-        const metrics = metricsLine(usage, elapsed, cost);
-
-        if (finishReason !== "stop") {
+          const status = await downloadVtt(job.url, job.lang, job.vtt);
+          if (status === "missing") {
+            await writeMarker(job.marker, job.url);
+            stats.skipped++;
+            task.output = `skipped (no transcript)  ${name}`;
+          } else if (status === "error") {
+            stats.errors++;
+            task.output = `error (download failed)  ${name}`;
+          } else {
+            available++;
+            task.output = `downloaded  ${name}`;
+          }
+        } catch (error) {
           stats.errors++;
-          task.output = `error (finishReason=${finishReason})  ${name}`;
-          return;
+          task.output = `error (${error.message})  ${name}`;
+        } finally {
+          task.title = `Download transcripts (${available}/${total})`;
         }
+      });
+    },
+  };
 
-        const front = frontmatter(job, { usage, elapsed, cost, finishReason });
-        await writeFile(
-          md,
-          `${front}# ${job.title}\n\n${hardWrap(body)}\n`,
-        );
-        stats.generated++;
-        task.output = `generated  ${name}  ${metrics}`;
-      } catch (error) {
-        stats.errors++;
-        task.output = `error (${error.message})  ${name}`;
-      } finally {
-        const upToDate = stats.already + stats.generated;
-        task.title = `Generate markdown (${upToDate}/${jobs.length}${already})`;
+  const generateTask = {
+    title: "Generate markdown",
+    rendererOptions: phaseOptions,
+    task: async (_ctx, task) => {
+      const items = [];
+      for (const job of pending) {
+        if (await exists(job.vtt)) items.push(job);
       }
-    });
-  },
-};
+      if (items.length === 0) {
+        task.skip("nothing to generate");
+        return;
+      }
 
-await new Listr([downloadTask, generateTask], {
-  exitOnError: false,
-  rendererOptions,
-  fallbackRenderer: "simple",
-  fallbackRendererOptions: rendererOptions,
-}).run();
+      const already = stats.already > 0 ? `, ${stats.already} already` : "";
+      task.title =
+        `Generate markdown (${stats.already}/${jobs.length}${already})`;
+      await forEachConcurrent(items, llmConcurrency, async (job) => {
+        const name = `${job.base.slice(DIR.length + 1)}.md`;
+        const md = `${job.base}.md`;
+        try {
+          const transcript = vttToText(await readFile(job.vtt, "utf8"));
+          const { body, usage, finishReason, elapsed } = await toMarkdown(
+            { model, retryDelays: RETRY_DELAYS, maxOutputTokens },
+            job.title,
+            transcript,
+            (nextAttempt, totalAttempts, waitMs) => {
+              task.output = `retrying in ${Math.round(waitMs / 1000)}s ` +
+                `(attempt ${nextAttempt}/${totalAttempts})  ${name}`;
+            },
+          );
 
-console.error(
-  `summary: ${stats.generated} generated, ${stats.already} already generated, ${stats.skipped} skipped, ${stats.errors} error`,
-);
-const seconds = stats.totalSeconds.toFixed(1);
-console.error(
-  `total: ${seconds}s, ${stats.totalInput} in / ${stats.totalOutput} out${
-    stats.costKnown ? `, ~$${stats.totalCost.toFixed(6)}` : ""
-  }`,
-);
+          stats.totalSeconds += elapsed;
+          stats.totalInput += usage?.inputTokens ?? 0;
+          stats.totalOutput += usage?.outputTokens ?? 0;
+          const cost = estimateCost(modelId, usage);
+          if (cost === null) stats.costKnown = false;
+          else stats.totalCost += cost;
+          const metrics = metricsLine(modelId, usage, elapsed, cost);
+
+          if (finishReason !== "stop") {
+            stats.errors++;
+            task.output = `error (finishReason=${finishReason})  ${name}`;
+            return;
+          }
+
+          const front = frontmatter(job, {
+            modelId,
+            usage,
+            elapsed,
+            cost,
+            finishReason,
+          });
+          await writeFile(
+            md,
+            `${front}# ${job.title}\n\n${hardWrap(body)}\n`,
+          );
+          stats.generated++;
+          task.output = `generated  ${name}  ${metrics}`;
+        } catch (error) {
+          stats.errors++;
+          task.output = `error (${error.message})  ${name}`;
+        } finally {
+          const upToDate = stats.already + stats.generated;
+          task.title = `Generate markdown (${upToDate}/${jobs.length}${already})`;
+        }
+      });
+    },
+  };
+
+  await new Listr([downloadTask, generateTask], {
+    exitOnError: false,
+    rendererOptions,
+    fallbackRenderer: "simple",
+    fallbackRendererOptions: rendererOptions,
+  }).run();
+
+  console.error(
+    `summary: ${stats.generated} generated, ${stats.already} already generated, ${stats.skipped} skipped, ${stats.errors} error`,
+  );
+  const seconds = stats.totalSeconds.toFixed(1);
+  console.error(
+    `total: ${seconds}s, ${stats.totalInput} in / ${stats.totalOutput} out${
+      stats.costKnown ? `, ~$${stats.totalCost.toFixed(6)}` : ""
+    }`,
+  );
+}

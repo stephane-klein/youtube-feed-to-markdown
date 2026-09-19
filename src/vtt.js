@@ -53,7 +53,7 @@ export async function writeMarker(path, url) {
 }
 
 export async function downloadVtt(url, lang, dest) {
-  const tmp = await mkdtemp(join(tmpdir(), "yfmtm-"));
+  const tmp = await mkdtemp(join(tmpdir(), "yt-to-md-"));
   let failed = false;
   try {
     for (const mode of ["--write-subs", "--write-auto-subs"]) {

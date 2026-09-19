@@ -1,5 +1,5 @@
 {
-  "name": "@sklein/youtube-feed-to-markdown",
+  "name": "@sklein/youtube-to-markdown",
   "version": "0.1.0",
   "description": "Collect YouTube channel videos into feed.yaml with yt-dlp, download transcripts and turn them into Markdown prose with an LLM.",
   "type": "module",
@@ -12,16 +12,18 @@
   "engines": {
     "node": ">=22"
   },
+  "bin": {
+    "youtube-to-markdown": "src/cli.js"
+  },
   "scripts": {
-    "extract-video-metadata": "node src/extract-video-metadata.js",
-    "download-vtt": "node src/download-vtt.js",
-    "generate-markdown": "node src/generate-markdown.js",
-    "markdown-stats": "node src/markdown-stats.js"
+    "youtube-to-markdown": "node src/cli.js"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "~3.0.51",
     "ai": "~7.0.105",
     "listr2": "~11.1.0",
-    "yaml": "~2.9.1"
+    "smol-toml": "~1.8.0",
+    "yaml": "~2.9.1",
+    "yargs": "~18.1.0"
   }
 }

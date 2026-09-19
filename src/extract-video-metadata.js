@@ -1,11 +1,7 @@
-#!/usr/bin/env node
-
 import { readFile, writeFile } from "node:fs/promises";
 import { parseAllDocuments, stringify } from "yaml";
 import { runYtDlp } from "./ytdlp.js";
 
-const FEED = "feed.yaml";
-const FORCE_DATES = process.env.FORCE_DATES === "1";
 const DATE_CHUNK = 50;
 
 const toIso = (raw) =>
@@ -153,27 +149,29 @@ function mergeVideos(existing, fetched) {
   );
 }
 
-const docs = parseAllDocuments(await readFile(FEED, "utf8"));
-const rendered = [];
+export async function runExtract({ feed = "feed.yaml", forceDates = false } = {}) {
+  const docs = parseAllDocuments(await readFile(feed, "utf8"));
+  const rendered = [];
 
-for (const doc of docs) {
-  const data = doc.toJS() ?? {};
-  if (typeof data.url === "string" && data.url) {
-    const videos = data.videos ?? [];
-    const knownDates = FORCE_DATES
-      ? new Map()
-      : new Map(
-        videos
-          .filter((video) => video.url && video.date)
-          .map((video) => [videoId(video.url), video.date]),
+  for (const doc of docs) {
+    const data = doc.toJS() ?? {};
+    if (typeof data.url === "string" && data.url) {
+      const videos = data.videos ?? [];
+      const knownDates = forceDates
+        ? new Map()
+        : new Map(
+          videos
+            .filter((video) => video.url && video.date)
+            .map((video) => [videoId(video.url), video.date]),
+        );
+      console.error(`→ ${data.url}`);
+      data.videos = mergeVideos(
+        videos,
+        await fetchVideos(data.url, knownDates),
       );
-    console.error(`→ ${data.url}`);
-    data.videos = mergeVideos(
-      videos,
-      await fetchVideos(data.url, knownDates),
-    );
+    }
+    rendered.push(stringify(data, { lineWidth: 0 }).trimEnd());
   }
-  rendered.push(stringify(data, { lineWidth: 0 }).trimEnd());
-}
 
-await writeFile(FEED, rendered.join("\n---\n") + "\n");
+  await writeFile(feed, rendered.join("\n---\n") + "\n");
+}

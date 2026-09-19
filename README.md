@@ -8,37 +8,49 @@ I collect the videos of a few YouTube channels into `feed.yaml`, using
 - Node.js 22 or later;
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp) on your `PATH`.
 
-The scripts run yt-dlp with `--js-runtimes node`: solving YouTube's JavaScript
+The commands call yt-dlp with `--js-runtimes node`: solving YouTube's JavaScript
 challenges requires an external JavaScript runtime, and Node.js — already
 required here — does the job.
 
 ## Install
 
-[mise](https://mise.jdx.dev/) installs both yt-dlp and Node.js:
+[mise](https://mise.jdx.dev/) installs both yt-dlp and Node.js and defines the
+`youtube-to-markdown` shell alias; `npm install` fetches the JavaScript
+dependencies:
 
 ```sh
 $ mise install
+$ npm install
 ```
 
 ## Run
 
 ```sh
-$ mise run extract-video-metadata
+$ youtube-to-markdown extract-video-metadata
 → https://www.youtube.com/@le_science4all
 → https://www.youtube.com/@MonsieurPhi
 ```
 
-The same commands are exposed as npm scripts: `npm run extract-video-metadata`,
-`npm run download-vtt`, `npm run generate-markdown` and `npm run markdown-stats`.
+`youtube-to-markdown` is a mise shell alias for `node src/cli.js`, set when you
+enter the project from an interactive bash, zsh or fish shell. It exposes four
+subcommands: `extract-video-metadata`, `download-vtt`, `generate-markdown` and
+`markdown-stats`. Run `youtube-to-markdown <command> --help` for the available
+options; in scripts and CI, call `node src/cli.js <command>` instead, since
+shell aliases are interactive-only.
 
-The script reads the channel URLs from `feed.yaml`, asks yt-dlp for each
+Settings resolve in this order: command-line flags, then `YT_TO_MD_*`
+environment variables, then `./youtube-to-markdown.toml`, then
+`~/.config/youtube-to-markdown/config.toml`, then the built-in defaults. The API
+key stays a secret: `--api-key` or `OPENAI_API_KEY`.
+
+The command reads the channel URLs from `feed.yaml`, asks yt-dlp for each
 channel's videos, and writes the result back into the file. I run it from time
 to time: it is idempotent, so a new run only adds the videos that are missing.
 
 ## feed.yaml
 
 A multi-document YAML file, one document per channel. I only set the channel
-URL, and the script fills the rest:
+URL, and the command fills the rest:
 
 ```yaml
 url: https://www.youtube.com/@le_science4all
@@ -63,7 +75,7 @@ I mark the videos I want as transcripts with a `download_vtt` field:
 Then:
 
 ```sh
-$ mise run download_vtt
+$ youtube-to-markdown download-vtt
 21 transcript(s) to check
 [ 1/21] downloaded         2016-07-14_le-sol-accelere-t-il-vraiment-vers-le-haut-debattonsmieux.fr.vtt
 [ 2/21] already downloaded 2016-08-25_les-synonymes-a-connotations-opposees-debattonsmieux.fr.vtt
@@ -72,15 +84,15 @@ $ mise run download_vtt
 summary: 1 downloaded, 1 already downloaded, 1 missing, 0 error
 ```
 
-For each marked video, the task writes the subtitle to
+For each marked video, the command writes the subtitle to
 `contents/<date>_<slug>.<lang>.vtt`, for example
 `contents/2016-02-12_pourquoi-est-il-si-fou-relativite-1.fr.vtt`. It prefers
 manual subtitles and falls back to the auto-generated ones. A file that already
-exists is left untouched, so running the task again only fetches new
-transcripts. The `extract-video-metadata` task keeps the `download_vtt`
+exists is left untouched, so running the command again only fetches new
+transcripts. The `extract-video-metadata` command keeps the `download_vtt`
 field.
 
-When a video has no subtitle at all, the task writes a `<…>.vtt.missing`
+When a video has no subtitle at all, the command writes a `<…>.vtt.missing`
 marker and stops trying. I delete that marker to force a new attempt.
 
 ## Markdown
@@ -106,7 +118,7 @@ $ $EDITOR .secret.sh
 Then:
 
 ```sh
-$ mise run generate_markdown
+$ youtube-to-markdown generate-markdown
 74 markdown(s) to generate with mimo-v2.5
 ✔ Download transcripts (73/74)
   › downloaded  2017-08-04_nietzsche-la-morale-des-winners-genealogie-de-la-morale-1-2.fr.md
@@ -118,26 +130,28 @@ summary: 36 generated, 37 already generated, 1 skipped, 0 error
 total: 3135.6s, 159408 in / 117432 out, ~$0.033372
 ```
 
-The task sends each transcript to an LLM through ai-sdk, configured with
-`OPENAI_API_KEY`, `OPENAIAPI_MODEL_ID` and `OPENAIAPI_ENDPOINT`, and gets back
-Markdown prose with section headings when the talk needs them. Paragraphs are
-hard-wrapped at 80 columns. The result goes to
+The command sends each transcript to an LLM through ai-sdk, configured with the
+API key (`OPENAI_API_KEY` or `--api-key`), the model (`YT_TO_MD_MODEL_ID` or
+`--model`) and the endpoint (`YT_TO_MD_OPENAIAPI_ENDPOINT` or `--endpoint`), and
+gets back Markdown prose with section headings when the talk needs them.
+Paragraphs are hard-wrapped at 80 columns. The result goes to
 `contents/<date>_<slug>.<lang>.md`. A second run reports `already generated` and
 writes nothing.
 
-The task runs in two sequential phases. `Download transcripts` reports how many
+The command runs in two sequential phases. `Download transcripts` reports how many
 videos have a transcript (`available/total`) and fetches the missing ones, at
-most `YTDLP_CONCURRENCY` at a time (default 2); only downloads, skips and errors
+most `--ytdlp-concurrency` at a time (default 2); only downloads, skips and errors
 are listed. The `Generate markdown` phase then converts the transcripts, at most
-`OPENAIAPI_CONCURRENCY` at a time (default 6), reporting the number of up-to-date
+`--concurrency` at a time (default 6), reporting the number of up-to-date
 Markdown files over the whole feed (`ready/total, N already`). Each phase keeps
 only the last 20 events on screen, so it stays bounded even with a large feed.
 
 Retryable API errors (HTTP 408, 409, 429 or >= 500) are retried with growing
-delays — 10 s, 30 s, 60 s by default, configurable with `OPENAIAPI_RETRY_DELAYS`
-(comma-separated seconds). A `Retry-After` header from the server is honored when
-longer than the schedule. Each retry is shown in the phase output; after the last
-attempt the file is reported as an error and is retried on the next run.
+delays — 10 s, 30 s, 60 s by default, configurable with `--retry-delays`
+(comma-separated seconds, or `YT_TO_MD_RETRY_DELAYS`). A `Retry-After` header
+from the server is honored when longer than the schedule. Each retry is shown in
+the phase output; after the last attempt the file is reported as an error and is
+retried on the next run.
 
 ### Frontmatter
 
@@ -162,17 +176,17 @@ llm:
 `video_title` is the original video title in the file's language and
 `generated_at` is the UTC time of the generation. `estimated_cost_usd` is `null`
 when the model is not in the price table. Existing files are left untouched: run
-`FORCE_MARKDOWN=1 mise run generate_markdown` to regenerate every file, which is
-also the way to add the frontmatter to files generated before it existed.
+`youtube-to-markdown generate-markdown --force` to regenerate every file, which
+is also the way to add the frontmatter to files generated before it existed.
 
 ## Stats
 
-`markdown_stats` reads the frontmatter of every `contents/*.md` and prints global
+`markdown-stats` reads the frontmatter of every `contents/*.md` and prints global
 totals — tokens, estimated cost, processing time — with a breakdown per model and
 per language:
 
 ```sh
-$ mise run markdown_stats
+$ youtube-to-markdown markdown-stats
 contents/ — 43 file(s)
   with frontmatter     3
   without frontmatter  40

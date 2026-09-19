@@ -1,27 +1,14 @@
 [env]
-X_OPENCODE_SESSION="youtube-feed-to-markdown/0.1"
-OPENAIAPI_MODEL_ID="mimo-v2.5"
-OPENAIAPI_ENDPOINT="https://opencode.ai/zen/go/v1/chat/completions"
-OPENAIAPI_CONCURRENCY="6"
-YTDLP_CONCURRENCY="2"
+YT_TO_MD_X_OPENCODE_SESSION="youtube-feed-to-markdown/0.1"
+YT_TO_MD_MODEL_ID="mimo-v2.5"
+YT_TO_MD_OPENAIAPI_ENDPOINT="https://opencode.ai/zen/go/v1/chat/completions"
+YT_TO_MD_CONCURRENCY="6"
+YT_TO_MD_YTDLP_CONCURRENCY="2"
 _.source = ".secret.sh"
+
+[shell_alias]
+youtube-to-markdown = "node {{config_root | quote}}/src/cli.js"
 
 [tools]
 yt-dlp = "2026.08.19"
 node = "24.21.0"
-
-[tasks.extract-video-metadata]
-description = "Alimente les listes videos de feed.yaml depuis les chaînes YouTube"
-run = "src/extract-video-metadata.js"
-
-[tasks.download_vtt]
-description = "Télécharge les transcripts VTT des vidéos marquées download_vtt"
-run = "src/download-vtt.js"
-
-[tasks.generate_markdown]
-description = "Transforme les transcripts VTT en prose Markdown via ai-sdk"
-run = "src/generate-markdown.js"
-
-[tasks.markdown_stats]
-description = "Rapport global (tokens, coût, temps) depuis les frontmatter de contents/"
-run = "src/markdown-stats.js"

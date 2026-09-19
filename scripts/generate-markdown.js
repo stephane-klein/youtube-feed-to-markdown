@@ -3,6 +3,7 @@
 import { createOpenAICompatible } from "npm:@ai-sdk/openai-compatible@3.0.51";
 import { generateText } from "npm:ai@7.0.105";
 import { parseAllDocuments } from "npm:yaml@2.9.1";
+import { Listr, ListrLogger, ProcessOutput } from "npm:listr2@11.1.0";
 import { DIR, downloadVtt, exists, videoJobs, writeMarker } from "./vtt.js";
 
 const FEED = "feed.yaml";
@@ -26,6 +27,9 @@ const session = Deno.env.get("X_OPENCODE_SESSION");
 if (!apiKey) throw new Error("OPENAI_API_KEY is not set");
 if (!modelId) throw new Error("OPENAIAPI_MODEL_ID is not set");
 if (!endpoint) throw new Error("OPENAIAPI_ENDPOINT is not set");
+
+const llmConcurrency = Number(Deno.env.get("OPENAIAPI_CONCURRENCY") ?? 6);
+const vttConcurrency = Number(Deno.env.get("YTDLP_CONCURRENCY") ?? 2);
 
 const provider = createOpenAICompatible({
   name: "opencode",
@@ -181,93 +185,177 @@ for (const doc of docs) {
 
 console.error(`${jobs.length} markdown(s) to generate with ${modelId}`);
 
-const width = String(jobs.length).length;
-let generated = 0;
-let already = 0;
-let skipped = 0;
-let errors = 0;
-let totalSeconds = 0;
-let totalInput = 0;
-let totalOutput = 0;
-let totalCost = 0;
-let costKnown = true;
+const stats = {
+  generated: 0,
+  already: 0,
+  skipped: 0,
+  errors: 0,
+  totalSeconds: 0,
+  totalInput: 0,
+  totalOutput: 0,
+  totalCost: 0,
+  costKnown: true,
+};
 
-for (const [index, job] of jobs.entries()) {
-  const prefix = `[${String(index + 1).padStart(width)}/${jobs.length}]`;
-  const name = `${job.base.slice(DIR.length + 1)}.md`;
-  const md = `${job.base}.md`;
+const rendererOptions = {
+  logger: new ListrLogger({
+    processOutput: new ProcessOutput(process.stderr, process.stderr),
+  }),
+  showErrorMessage: true,
+  collapseErrors: false,
+  collapseSkips: false,
+  icon: {
+    SKIPPED: "–",
+    SKIPPED_WITH_COLLAPSE: "–",
+    SKIPPED_WITHOUT_COLLAPSE: "–",
+  },
+  color: {
+    SKIPPED: (message) => message,
+    SKIPPED_WITH_COLLAPSE: (message) => message,
+    SKIPPED_WITHOUT_COLLAPSE: (message) => message,
+  },
+};
 
-  const report = (status, note) =>
-    console.error(
-      `${prefix} ${status.padEnd(18)} ${name}${note ? ` ${note}` : ""}`,
-    );
+const phaseOptions = { outputBar: 20, persistentOutput: true };
 
-  if (await exists(md)) {
-    already++;
-    report("already generated");
-    continue;
-  }
-
-  let note = "";
-  if (!(await exists(job.vtt))) {
-    if (await exists(job.marker)) {
-      skipped++;
-      report("skipped", "(no transcript)");
-      continue;
-    }
-
-    const status = await downloadVtt(job.url, job.lang, job.vtt);
-    if (status === "missing") {
-      await writeMarker(job.marker, job.url);
-      skipped++;
-      report("skipped", "(no transcript)");
-      continue;
-    }
-    if (status === "error") {
-      errors++;
-      report("error", "(transcript download failed, will retry on next run)");
-      continue;
-    }
-    note = "(transcript downloaded)";
-  }
-
-  try {
-    const transcript = vttToText(await Deno.readTextFile(job.vtt));
-    const { body, usage, finishReason, elapsed } = await toMarkdown(
-      job.title,
-      transcript,
-    );
-
-    totalSeconds += elapsed;
-    totalInput += usage?.inputTokens ?? 0;
-    totalOutput += usage?.outputTokens ?? 0;
-    const cost = estimateCost(usage);
-    if (cost === null) costKnown = false;
-    else totalCost += cost;
-    const metrics = metricsLine(usage, elapsed, cost);
-
-    if (finishReason !== "stop") {
-      errors++;
-      report("error", `(finishReason=${finishReason}: output truncated)`);
-      console.error(`      ${metrics}`);
-      continue;
-    }
-
-    await Deno.writeTextFile(md, `# ${job.title}\n\n${hardWrap(body)}\n`);
-    generated++;
-    report("generated", note);
-    console.error(`      ${metrics}`);
-  } catch (error) {
-    errors++;
-    report("error", `(${error.message})`);
-  }
+async function forEachConcurrent(items, limit, worker) {
+  let next = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(limit, items.length) }, async () => {
+      while (next < items.length) {
+        const item = items[next++];
+        await worker(item);
+      }
+    }),
+  );
 }
 
+const pending = [];
+for (const job of jobs) {
+  if (await exists(`${job.base}.md`)) stats.already++;
+  else pending.push(job);
+}
+
+const downloadTask = {
+  title: "Download transcripts",
+  rendererOptions: phaseOptions,
+  task: async (_ctx, task) => {
+    const total = jobs.length;
+    if (total === 0) {
+      task.skip("no video");
+      return;
+    }
+
+    const pendingSet = new Set(pending);
+    let available = 0;
+    const items = [];
+    for (const job of jobs) {
+      if (await exists(job.vtt)) {
+        available++;
+      } else if (pendingSet.has(job)) {
+        items.push(job);
+      }
+    }
+    task.title = `Download transcripts (${available}/${total})`;
+
+    await forEachConcurrent(items, vttConcurrency, async (job) => {
+      const name = `${job.base.slice(DIR.length + 1)}.md`;
+      try {
+        if (await exists(job.marker)) {
+          stats.skipped++;
+          task.output = `skipped (no transcript)  ${name}`;
+          return;
+        }
+
+        const status = await downloadVtt(job.url, job.lang, job.vtt);
+        if (status === "missing") {
+          await writeMarker(job.marker, job.url);
+          stats.skipped++;
+          task.output = `skipped (no transcript)  ${name}`;
+        } else if (status === "error") {
+          stats.errors++;
+          task.output = `error (download failed)  ${name}`;
+        } else {
+          available++;
+          task.output = `downloaded  ${name}`;
+        }
+      } catch (error) {
+        stats.errors++;
+        task.output = `error (${error.message})  ${name}`;
+      } finally {
+        task.title = `Download transcripts (${available}/${total})`;
+      }
+    });
+  },
+};
+
+const generateTask = {
+  title: "Generate markdown",
+  rendererOptions: phaseOptions,
+  task: async (_ctx, task) => {
+    const items = [];
+    for (const job of pending) {
+      if (await exists(job.vtt)) items.push(job);
+    }
+    if (items.length === 0) {
+      task.skip("nothing to generate");
+      return;
+    }
+
+    const already = stats.already > 0 ? `, ${stats.already} already` : "";
+    task.title =
+      `Generate markdown (${stats.already}/${jobs.length}${already})`;
+    await forEachConcurrent(items, llmConcurrency, async (job) => {
+      const name = `${job.base.slice(DIR.length + 1)}.md`;
+      const md = `${job.base}.md`;
+      try {
+        const transcript = vttToText(await Deno.readTextFile(job.vtt));
+        const { body, usage, finishReason, elapsed } = await toMarkdown(
+          job.title,
+          transcript,
+        );
+
+        stats.totalSeconds += elapsed;
+        stats.totalInput += usage?.inputTokens ?? 0;
+        stats.totalOutput += usage?.outputTokens ?? 0;
+        const cost = estimateCost(usage);
+        if (cost === null) stats.costKnown = false;
+        else stats.totalCost += cost;
+        const metrics = metricsLine(usage, elapsed, cost);
+
+        if (finishReason !== "stop") {
+          stats.errors++;
+          task.output = `error (finishReason=${finishReason})  ${name}`;
+          return;
+        }
+
+        await Deno.writeTextFile(md, `# ${job.title}\n\n${hardWrap(body)}\n`);
+        stats.generated++;
+        task.output = `generated  ${name}  ${metrics}`;
+      } catch (error) {
+        stats.errors++;
+        task.output = `error (${error.message})  ${name}`;
+      } finally {
+        const upToDate = stats.already + stats.generated;
+        task.title = `Generate markdown (${upToDate}/${jobs.length}${already})`;
+      }
+    });
+  },
+};
+
+await new Listr([downloadTask, generateTask], {
+  exitOnError: false,
+  rendererOptions,
+  fallbackRenderer: "simple",
+  fallbackRendererOptions: rendererOptions,
+}).run();
+
 console.error(
-  `summary: ${generated} generated, ${already} already generated, ${skipped} skipped, ${errors} error`,
+  `summary: ${stats.generated} generated, ${stats.already} already generated, ${stats.skipped} skipped, ${stats.errors} error`,
 );
+const seconds = stats.totalSeconds.toFixed(1);
 console.error(
-  `total: ${totalSeconds.toFixed(1)}s, ${totalInput} in / ${totalOutput} out${
-    costKnown ? `, ~$${totalCost.toFixed(6)}` : ""
+  `total: ${seconds}s, ${stats.totalInput} in / ${stats.totalOutput} out${
+    stats.costKnown ? `, ~$${stats.totalCost.toFixed(6)}` : ""
   }`,
 );

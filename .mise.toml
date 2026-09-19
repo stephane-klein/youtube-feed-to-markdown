@@ -2,6 +2,8 @@
 X_OPENCODE_SESSION="youtube-feed-to-markdown/0.1"
 OPENAIAPI_MODEL_ID="mimo-v2.5"
 OPENAIAPI_ENDPOINT="https://opencode.ai/zen/go/v1/chat/completions"
+OPENAIAPI_CONCURRENCY="6"
+YTDLP_CONCURRENCY="2"
 _.source = ".secret.sh"
 
 [tools]

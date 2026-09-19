@@ -93,11 +93,15 @@ Then:
 
 ```sh
 $ mise run generate_markdown
-1 markdown(s) to generate with mimo-v2.5
-[1/1] generated          2016-02-12_pourquoi-est-il-si-fou-relativite-1.fr.md (transcript downloaded)
-      mimo-v2.5  llm 3.2s  1834 in / 1476 out  ~$0.000670
-summary: 1 generated, 0 already generated, 0 skipped, 0 error
-total: 3.2s, 1834 in / 1476 out, ~$0.000670
+74 markdown(s) to generate with mimo-v2.5
+✔ Download transcripts (73/74)
+  › downloaded  2017-08-04_nietzsche-la-morale-des-winners-genealogie-de-la-morale-1-2.fr.md
+  › skipped (no transcript)  2017-06-26_favoriser-l-honnetete-democratie-18.fr.md
+✔ Generate markdown (73/74, 37 already)
+  › generated  2017-10-13_le-scepticisme-le-trilemme-d-agrippa-grain-de-philo-14-ep-2.fr.md  mimo-v2.5  llm 87.1s  4428 in / 3262 out  ~$0.000927
+  …
+summary: 36 generated, 37 already generated, 1 skipped, 0 error
+total: 3135.6s, 159408 in / 117432 out, ~$0.033372
 ```
 
 The task sends each transcript to an LLM through ai-sdk, configured with
@@ -106,4 +110,12 @@ Markdown prose with section headings when the talk needs them. Paragraphs are
 hard-wrapped at 80 columns. The result goes to
 `contents/<date>_<slug>.<lang>.md`. A second run reports `already generated` and
 writes nothing.
+
+The task runs in two sequential phases. `Download transcripts` reports how many
+videos have a transcript (`available/total`) and fetches the missing ones, at
+most `YTDLP_CONCURRENCY` at a time (default 2); only downloads, skips and errors
+are listed. The `Generate markdown` phase then converts the transcripts, at most
+`OPENAIAPI_CONCURRENCY` at a time (default 6), reporting the number of up-to-date
+Markdown files over the whole feed (`ready/total, N already`). Each phase keeps
+only the last 20 events on screen, so it stays bounded even with a large feed.
 

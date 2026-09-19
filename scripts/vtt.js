@@ -27,7 +27,7 @@ async function ytDlp(args) {
   const { success } = await new Deno.Command("yt-dlp", {
     args: ["--no-warnings", ...args],
     stdout: "piped",
-    stderr: "inherit",
+    stderr: "null",
   }).output();
   return success;
 }
@@ -52,6 +52,8 @@ export async function downloadVtt(url, lang, dest) {
     for (const mode of ["--write-subs", "--write-auto-subs"]) {
       const ok = await ytDlp([
         "--skip-download",
+        "--sleep-requests",
+        "2",
         mode,
         "--sub-langs",
         `^${lang}$`,

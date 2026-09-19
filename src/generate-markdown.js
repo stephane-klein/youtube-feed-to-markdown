@@ -2,7 +2,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { APICallError, generateText } from "ai";
 import { Listr, ListrLogger, ProcessOutput } from "listr2";
-import { parseAllDocuments, stringify } from "yaml";
+import { stringify } from "yaml";
 import {
   DIR,
   downloadVtt,
@@ -252,7 +252,7 @@ async function forEachConcurrent(items, limit, worker) {
 }
 
 export async function runGenerateMarkdown({
-  feed = "feed.yaml",
+  feed = [],
   model: modelId,
   endpoint,
   apiKey,
@@ -283,16 +283,11 @@ export async function runGenerateMarkdown({
 
   await mkdir(DIR, { recursive: true });
 
-  const docs = parseAllDocuments(await readFile(feed, "utf8"));
-  const jobs = [];
-
-  for (const doc of docs) {
-    const data = doc.toJS() ?? {};
-    for (const video of data.videos ?? []) {
-      if (!video.generate_markdown) continue;
-      jobs.push(...videoJobs(video));
-    }
-  }
+  const jobs = feed.flatMap((channel) =>
+    (channel.videos ?? [])
+      .filter((video) => video.generate_markdown)
+      .flatMap((video) => videoJobs(video)),
+  );
 
   console.error(`${jobs.length} markdown(s) to generate with ${modelId}`);
 

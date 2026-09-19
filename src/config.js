@@ -1,13 +1,31 @@
-import { existsSync, readFileSync } from "node:fs";
-import { parse } from "smol-toml";
+import { readFileSync } from "node:fs";
+import { parse } from "yaml";
 
 export function loadConfig(path) {
-  if (!existsSync(path)) return {};
-  return parse(readFileSync(path, "utf8"));
+  return parse(readFileSync(path, "utf8")) ?? {};
+}
+
+const YAML_KEYS = {
+  model: "model_id",
+  endpoint: "openaiapi_endpoint",
+  apiKey: "api_key",
+  session: "x_opencode_session",
+  concurrency: "concurrency",
+  ytdlpConcurrency: "ytdlp_concurrency",
+  retryDelays: "retry_delays",
+  maxOutputTokens: "max_output_tokens",
+};
+
+export function settingsFromConfig(config) {
+  return Object.fromEntries(
+    Object.entries(YAML_KEYS)
+      .map(([key, yamlKey]) => [key, config[yamlKey]])
+      .filter(([, value]) => value !== undefined),
+  );
 }
 
 const ENV = {
-  feed: "YT_TO_MD_FEED",
+  config: "YT_TO_MD_CONFIG",
   model: "YT_TO_MD_MODEL_ID",
   endpoint: "YT_TO_MD_OPENAIAPI_ENDPOINT",
   apiKey: "YT_TO_MD_API_KEY",
@@ -25,4 +43,3 @@ export function loadEnv(env = process.env) {
       .filter(([, value]) => value !== undefined),
   );
 }
-

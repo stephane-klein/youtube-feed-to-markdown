@@ -1,16 +1,26 @@
 #!/usr/bin/env node
 
 import { createRequire } from "node:module";
-import { homedir } from "node:os";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import { loadConfig, loadEnv } from "./config.js";
+import { loadConfig, loadEnv, settingsFromConfig } from "./config.js";
 import { runExtract } from "./extract-video-metadata.js";
 import { runDownloadVtt } from "./download-vtt.js";
 import { runGenerateMarkdown } from "./generate-markdown.js";
 import { runMarkdownStats } from "./markdown-stats.js";
 
 const { version } = createRequire(import.meta.url)("../package.json");
+
+const SETTING_KEYS = [
+  "model",
+  "endpoint",
+  "apiKey",
+  "session",
+  "concurrency",
+  "ytdlpConcurrency",
+  "retryDelays",
+  "maxOutputTokens",
+];
 
 const handle = (run) => async (argv) => {
   try {
@@ -21,46 +31,56 @@ const handle = (run) => async (argv) => {
   }
 };
 
-const feed = {
-  describe: "Path to the feed YAML file",
+const config = {
+  describe: "Path to the YAML configuration file",
   type: "string",
-  default: "feed.yaml",
+  default: "youtube_to_markdown.yaml",
+};
+
+const project = (argv) => {
+  const yaml = loadConfig(argv.config);
+  const settings = { ...settingsFromConfig(yaml) };
+  for (const key of SETTING_KEYS) {
+    if (argv[key] !== undefined) settings[key] = argv[key];
+  }
+  return { path: argv.config, config: yaml, feed: yaml.feed ?? [], settings };
 };
 
 yargs(hideBin(process.argv))
   .scriptName("youtube-to-markdown")
-  .config({
-    ...loadConfig(`${homedir()}/.config/youtube-to-markdown/config.toml`),
-    ...loadConfig("./youtube-to-markdown.toml"),
-    ...loadEnv(),
-  })
+  .config(loadEnv())
+  .option("config", config)
   .command(
     "extract-video-metadata",
-    "Fetch the channel videos from YouTube into the feed",
+    "Fetch the channel videos from YouTube into the configuration file",
     (yargs) =>
       yargs
-        .option("feed", feed)
         .option("force-dates", {
           describe: "Fetch every upload date again, ignoring the known ones",
           type: "boolean",
           default: false,
         }),
-    handle(runExtract),
+    handle(async (argv) => {
+      const { path, config: yaml } = project(argv);
+      await runExtract({ path, config: yaml, forceDates: argv.forceDates });
+    }),
   )
   .command(
     "download-vtt",
     "Download the VTT transcripts of the marked videos",
-    (yargs) => yargs.option("feed", feed),
-    handle(runDownloadVtt),
+    () => {},
+    handle(async (argv) => {
+      const { feed } = project(argv);
+      await runDownloadVtt({ feed });
+    }),
   )
   .command(
     "generate-markdown",
     "Turn the VTT transcripts into Markdown prose with an LLM",
     (yargs) =>
       yargs
-        .option("feed", feed)
         .option("model", {
-          describe: "LLM model id",
+          describe: "LLM model id (default: model_id in the configuration)",
           type: "string",
         })
         .option("endpoint", {
@@ -76,19 +96,16 @@ yargs(hideBin(process.argv))
           type: "string",
         })
         .option("concurrency", {
-          describe: "Maximum number of concurrent LLM calls",
+          describe: "Maximum number of concurrent LLM calls (default: 6)",
           type: "number",
-          default: 6,
         })
         .option("ytdlp-concurrency", {
-          describe: "Maximum number of concurrent transcript downloads",
+          describe: "Maximum number of concurrent transcript downloads (default: 2)",
           type: "number",
-          default: 2,
         })
         .option("retry-delays", {
-          describe: "Comma-separated retry delays in seconds",
+          describe: "Comma-separated retry delays in seconds (default: 10,30,60)",
           type: "string",
-          default: "10,30,60",
         })
         .option("max-output-tokens", {
           describe: "Override the computed output token budget",
@@ -99,7 +116,10 @@ yargs(hideBin(process.argv))
           type: "boolean",
           default: false,
         }),
-    handle(runGenerateMarkdown),
+    handle(async (argv) => {
+      const { feed, settings } = project(argv);
+      await runGenerateMarkdown({ feed, ...settings, force: argv.force });
+    }),
   )
   .command(
     "markdown-stats",

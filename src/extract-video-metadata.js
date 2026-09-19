@@ -1,5 +1,5 @@
-import { readFile, writeFile } from "node:fs/promises";
-import { parseAllDocuments, stringify } from "yaml";
+import { writeFile } from "node:fs/promises";
+import { stringify } from "yaml";
 import { runYtDlp } from "./ytdlp.js";
 
 const DATE_CHUNK = 50;
@@ -149,29 +149,28 @@ function mergeVideos(existing, fetched) {
   );
 }
 
-export async function runExtract({ feed = "feed.yaml", forceDates = false } = {}) {
-  const docs = parseAllDocuments(await readFile(feed, "utf8"));
-  const rendered = [];
+export async function runExtract({
+  path = "youtube_to_markdown.yaml",
+  config = {},
+  forceDates = false,
+} = {}) {
+  for (const channel of config.feed ?? []) {
+    if (typeof channel.url !== "string" || !channel.url) continue;
 
-  for (const doc of docs) {
-    const data = doc.toJS() ?? {};
-    if (typeof data.url === "string" && data.url) {
-      const videos = data.videos ?? [];
-      const knownDates = forceDates
-        ? new Map()
-        : new Map(
-          videos
-            .filter((video) => video.url && video.date)
-            .map((video) => [videoId(video.url), video.date]),
-        );
-      console.error(`→ ${data.url}`);
-      data.videos = mergeVideos(
-        videos,
-        await fetchVideos(data.url, knownDates),
+    const videos = channel.videos ?? [];
+    const knownDates = forceDates
+      ? new Map()
+      : new Map(
+        videos
+          .filter((video) => video.url && video.date)
+          .map((video) => [videoId(video.url), video.date]),
       );
-    }
-    rendered.push(stringify(data, { lineWidth: 0 }).trimEnd());
+    console.error(`→ ${channel.url}`);
+    channel.videos = mergeVideos(
+      videos,
+      await fetchVideos(channel.url, knownDates),
+    );
   }
 
-  await writeFile(feed, rendered.join("\n---\n") + "\n");
+  await writeFile(path, stringify(config, { lineWidth: 0 }));
 }

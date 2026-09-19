@@ -1,19 +1,12 @@
-import { mkdir, readFile } from "node:fs/promises";
-import { parseAllDocuments } from "yaml";
+import { mkdir } from "node:fs/promises";
 import { DIR, downloadVtt, exists, videoJobs, writeMarker } from "./vtt.js";
 
-export async function runDownloadVtt({ feed = "feed.yaml" } = {}) {
+export async function runDownloadVtt({ feed = [] } = {}) {
   await mkdir(DIR, { recursive: true });
 
-  const docs = parseAllDocuments(await readFile(feed, "utf8"));
-  const jobs = [];
-
-  for (const doc of docs) {
-    const data = doc.toJS() ?? {};
-    for (const video of data.videos ?? []) {
-      jobs.push(...videoJobs(video));
-    }
-  }
+  const jobs = feed.flatMap((channel) =>
+    (channel.videos ?? []).flatMap((video) => videoJobs(video)),
+  );
 
   console.error(`${jobs.length} transcript(s) to check`);
 

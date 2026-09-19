@@ -1,7 +1,7 @@
 # youtube-feed-to-markdown
 
-I collect the videos of a few YouTube channels into `feed.yaml`, using
-[yt-dlp](https://github.com/yt-dlp/yt-dlp) to fetch the metadata.
+I collect the videos of a few YouTube channels into `youtube_to_markdown.yaml`,
+using [yt-dlp](https://github.com/yt-dlp/yt-dlp) to fetch the metadata.
 
 ## Requirements
 
@@ -38,24 +38,43 @@ subcommands: `extract-video-metadata`, `download-vtt`, `generate-markdown` and
 options; in scripts and CI, call `node src/cli.js <command>` instead, since
 shell aliases are interactive-only.
 
-Settings resolve in this order: command-line flags, then `YT_TO_MD_*`
-environment variables, then `./youtube-to-markdown.toml`, then
-`~/.config/youtube-to-markdown/config.toml`, then the built-in defaults. The API
-key stays a secret: `--api-key` or `OPENAI_API_KEY`.
+The configuration file is `youtube_to_markdown.yaml` (override it with
+`--config` or `YT_TO_MD_CONFIG`). Its settings resolve in this order: command-line
+flags, then `YT_TO_MD_*` environment variables, then the settings written in the
+YAML file, then the built-in defaults. The API key stays a secret: `--api-key` or
+`OPENAI_API_KEY`.
 
-The command reads the channel URLs from `feed.yaml`, asks yt-dlp for each
-channel's videos, and writes the result back into the file. I run it from time
-to time: it is idempotent, so a new run only adds the videos that are missing.
+The `extract-video-metadata` command reads the channel URLs from the
+configuration file, asks yt-dlp for each channel's videos, and writes the result
+back into the file. I run it from time to time: it is idempotent, so a new run
+only adds the videos that are missing.
 
-## feed.yaml
+## Configuration
 
-A multi-document YAML file, one document per channel. I only set the channel
-URL, and the command fills the rest:
+`youtube_to_markdown.yaml` holds the settings and the channels. Settings are
+`x_opencode_session`, `model_id`, `openaiapi_endpoint`, `concurrency` and
+`ytdlp_concurrency` (plus the optional `api_key`, `retry_delays` and
+`max_output_tokens`). I only set the channel URLs, and the
+`extract-video-metadata` command fills the rest:
 
 ```yaml
-url: https://www.youtube.com/@le_science4all
----
-url: https://www.youtube.com/@MonsieurPhi
+x_opencode_session: "youtube-to-markdown/0.1"
+model_id: "mimo-v2.5"
+openaiapi_endpoint: "https://opencode.ai/zen/go/v1/chat/completions"
+concurrency: "6"
+ytdlp_concurrency: "2"
+feed:
+  - title: Science4All
+    url: https://www.youtube.com/@le_science4all
+    videos:
+      - title:
+          fr: Pourquoi π est-il si fou ? Relativité 1
+          en: Why is π so crazy? Relativity 1
+        date: 2016-02-12
+        url: https://www.youtube.com/watch?v=PxRPpdzmbUQ
+  - title: MrPhi
+    url: https://www.youtube.com/@MonsieurPhi
+    videos: []
 ```
 
 ## Transcripts

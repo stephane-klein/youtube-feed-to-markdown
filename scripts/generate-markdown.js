@@ -1,10 +1,17 @@
 #!/usr/bin/env -S deno run --allow-read --allow-write --allow-env --allow-net=opencode.ai --allow-run=yt-dlp --allow-sys=hostname
 
 import { createOpenAICompatible } from "npm:@ai-sdk/openai-compatible@3.0.51";
-import { generateText } from "npm:ai@7.0.105";
-import { parseAllDocuments } from "npm:yaml@2.9.1";
+import { APICallError, generateText } from "npm:ai@7.0.105";
+import { parseAllDocuments, stringify } from "npm:yaml@2.9.1";
 import { Listr, ListrLogger, ProcessOutput } from "npm:listr2@11.1.0";
-import { DIR, downloadVtt, exists, videoJobs, writeMarker } from "./vtt.js";
+import {
+  DIR,
+  downloadVtt,
+  exists,
+  titleForLang,
+  videoJobs,
+  writeMarker,
+} from "./vtt.js";
 
 const FEED = "feed.yaml";
 
@@ -30,6 +37,13 @@ if (!endpoint) throw new Error("OPENAIAPI_ENDPOINT is not set");
 
 const llmConcurrency = Number(Deno.env.get("OPENAIAPI_CONCURRENCY") ?? 6);
 const vttConcurrency = Number(Deno.env.get("YTDLP_CONCURRENCY") ?? 2);
+const FORCE_MARKDOWN = Deno.env.get("FORCE_MARKDOWN") === "1";
+const RETRY_DELAYS = (Deno.env.get("OPENAIAPI_RETRY_DELAYS") ?? "10,30,60")
+  .split(",")
+  .map((value) => value.trim())
+  .filter(Boolean)
+  .map((value) => Number(value) * 1000)
+  .filter((value) => Number.isFinite(value) && value >= 0);
 
 const provider = createOpenAICompatible({
   name: "opencode",
@@ -46,12 +60,17 @@ const PRICES = {
   "mimo-v2.5": { input: 0.14, output: 0.28, cachedInput: 0.0028 }
 };
 
+function cachedInputTokens(usage) {
+  const details = usage?.inputTokenDetails ?? {};
+  return details.cacheReadTokens ?? usage?.cachedInputTokens ?? 0;
+}
+
 function estimateCost(usage) {
   const price = PRICES[modelId];
   if (!price || !usage) return null;
 
   const details = usage.inputTokenDetails ?? {};
-  const cached = details.cacheReadTokens ?? usage.cachedInputTokens ?? 0;
+  const cached = cachedInputTokens(usage);
   const input =
     details.noCacheTokens ?? Math.max((usage.inputTokens ?? 0) - cached, 0);
 
@@ -88,6 +107,25 @@ function metricsLine(usage, elapsed, cost) {
   ]
     .filter(Boolean)
     .join("  ");
+}
+
+function frontmatter(job, { usage, elapsed, cost, finishReason }) {
+  const data = {
+    source_url: job.url,
+    video_title: titleForLang(job.titles, job.lang),
+    generated_at: new Date().toISOString(),
+    llm: {
+      model: modelId,
+      duration_seconds: Number(elapsed.toFixed(1)),
+      input_tokens: usage?.inputTokens ?? null,
+      cached_input_tokens: usage ? cachedInputTokens(usage) : null,
+      output_tokens: usage?.outputTokens ?? null,
+      estimated_cost_usd: cost === null ? null : Number(cost.toFixed(6)),
+      finish_reason: finishReason,
+    },
+  };
+
+  return `---\n${stringify(data, { lineWidth: 0 }).trimEnd()}\n---\n\n`;
 }
 
 const isHeading = (text) => /^#{1,6}\s/.test(text);
@@ -150,24 +188,71 @@ function vttToText(vtt) {
   return out.join("\n");
 }
 
-async function toMarkdown(title, transcript) {
-  const started = performance.now();
-  const { text, usage, finishReason } = await generateText({
-    model,
-    system: SYSTEM,
-    prompt: `Title: ${title}\n\nTranscript:\n${transcript}`,
-    temperature: 0.2,
-    maxOutputTokens: outputBudget(transcript),
-  });
-  const elapsed = (performance.now() - started) / 1000;
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-  const body = text
-    .trim()
-    .replace(/^```[a-z]*\n?/, "")
-    .replace(/\n?```$/, "")
-    .trim();
+function isRetryable(error) {
+  return APICallError.isInstance(error) && error.isRetryable;
+}
 
-  return { body, usage, finishReason, elapsed };
+function retryDelayMs(error, fallbackMs) {
+  const headers = APICallError.isInstance(error)
+    ? error.responseHeaders
+    : undefined;
+  let headerMs;
+  if (headers?.["retry-after-ms"] !== undefined) {
+    headerMs = Number.parseFloat(headers["retry-after-ms"]);
+  } else if (headers?.["retry-after"] !== undefined) {
+    const seconds = Number.parseFloat(headers["retry-after"]);
+    headerMs = Number.isNaN(seconds)
+      ? Date.parse(headers["retry-after"]) - Date.now()
+      : seconds * 1000;
+  }
+
+  if (!Number.isFinite(headerMs) || headerMs <= 0) return fallbackMs;
+  return Math.max(headerMs, fallbackMs);
+}
+
+function describeError(error, attempts) {
+  const suffix = ` after ${attempts} attempt(s)`;
+  if (!APICallError.isInstance(error)) return `${error.message}${suffix}`;
+
+  const status = error.statusCode ? `HTTP ${error.statusCode}` : "API error";
+  const body = error.responseBody?.trim().replace(/\s+/g, " ").slice(0, 200);
+  return `${status} ${error.message}${suffix}${body ? `: ${body}` : ""}`;
+}
+
+async function toMarkdown(title, transcript, onRetry) {
+  const totalAttempts = RETRY_DELAYS.length + 1;
+
+  for (let attempt = 1;; attempt++) {
+    const started = performance.now();
+    try {
+      const { text, usage, finishReason } = await generateText({
+        model,
+        system: SYSTEM,
+        prompt: `Title: ${title}\n\nTranscript:\n${transcript}`,
+        temperature: 0.2,
+        maxOutputTokens: outputBudget(transcript),
+        maxRetries: 0,
+      });
+      const elapsed = (performance.now() - started) / 1000;
+
+      const body = text
+        .trim()
+        .replace(/^```[a-z]*\n?/, "")
+        .replace(/\n?```$/, "")
+        .trim();
+
+      return { body, usage, finishReason, elapsed };
+    } catch (error) {
+      if (!isRetryable(error) || attempt > RETRY_DELAYS.length) {
+        throw new Error(describeError(error, attempt), { cause: error });
+      }
+      const waitMs = retryDelayMs(error, RETRY_DELAYS[attempt - 1]);
+      onRetry?.(attempt + 1, totalAttempts, waitMs);
+      await delay(waitMs);
+    }
+  }
 }
 
 await Deno.mkdir(DIR, { recursive: true });
@@ -232,7 +317,7 @@ async function forEachConcurrent(items, limit, worker) {
 
 const pending = [];
 for (const job of jobs) {
-  if (await exists(`${job.base}.md`)) stats.already++;
+  if (!FORCE_MARKDOWN && (await exists(`${job.base}.md`))) stats.already++;
   else pending.push(job);
 }
 
@@ -313,6 +398,10 @@ const generateTask = {
         const { body, usage, finishReason, elapsed } = await toMarkdown(
           job.title,
           transcript,
+          (nextAttempt, totalAttempts, waitMs) => {
+            task.output = `retrying in ${Math.round(waitMs / 1000)}s ` +
+              `(attempt ${nextAttempt}/${totalAttempts})  ${name}`;
+          },
         );
 
         stats.totalSeconds += elapsed;
@@ -329,7 +418,11 @@ const generateTask = {
           return;
         }
 
-        await Deno.writeTextFile(md, `# ${job.title}\n\n${hardWrap(body)}\n`);
+        const front = frontmatter(job, { usage, elapsed, cost, finishReason });
+        await Deno.writeTextFile(
+          md,
+          `${front}# ${job.title}\n\n${hardWrap(body)}\n`,
+        );
         stats.generated++;
         task.output = `generated  ${name}  ${metrics}`;
       } catch (error) {

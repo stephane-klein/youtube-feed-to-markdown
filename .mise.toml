@@ -21,3 +21,7 @@ run = "scripts/download-vtt.js"
 [tasks.generate_markdown]
 description = "Transforme les transcripts VTT en prose Markdown via ai-sdk"
 run = "scripts/generate-markdown.js"
+
+[tasks.markdown_stats]
+description = "Rapport global (tokens, coût, temps) depuis les frontmatter de contents/"
+run = "scripts/markdown-stats.js"

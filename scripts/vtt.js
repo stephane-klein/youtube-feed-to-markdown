@@ -14,6 +14,11 @@ export const primaryTitle = (video) => {
   return title?.fr ?? title?.en ?? "";
 };
 
+export const titleForLang = (title, lang) => {
+  if (typeof title === "string") return title;
+  return title?.[lang] ?? title?.fr ?? title?.en ?? "";
+};
+
 export async function exists(path) {
   try {
     await Deno.stat(path);
@@ -91,6 +96,7 @@ export function videoJobs(video) {
       url: video.url,
       lang,
       title: primaryTitle(video),
+      titles: video.title,
       base,
       vtt: `${base}.vtt`,
       marker: `${base}.vtt.missing`,

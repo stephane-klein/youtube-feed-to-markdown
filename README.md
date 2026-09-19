@@ -119,3 +119,76 @@ are listed. The `Generate markdown` phase then converts the transcripts, at most
 Markdown files over the whole feed (`ready/total, N already`). Each phase keeps
 only the last 20 events on screen, so it stays bounded even with a large feed.
 
+Retryable API errors (HTTP 408, 409, 429 or >= 500) are retried with growing
+delays — 10 s, 30 s, 60 s by default, configurable with `OPENAIAPI_RETRY_DELAYS`
+(comma-separated seconds). A `Retry-After` header from the server is honored when
+longer than the schedule. Each retry is shown in the phase output; after the last
+attempt the file is reported as an error and is retried on the next run.
+
+### Frontmatter
+
+Each generated file starts with a YAML frontmatter describing the run:
+
+```yaml
+---
+source_url: https://www.youtube.com/watch?v=PxRPpdzmbUQ
+video_title: Pourquoi π est-il si fou ? Relativité 1
+generated_at: 2026-09-19T10:12:33.456Z
+llm:
+  model: mimo-v2.5
+  duration_seconds: 87.1
+  input_tokens: 4428
+  cached_input_tokens: 0
+  output_tokens: 3262
+  estimated_cost_usd: 0.000927
+  finish_reason: stop
+---
+```
+
+`video_title` is the original video title in the file's language and
+`generated_at` is the UTC time of the generation. `estimated_cost_usd` is `null`
+when the model is not in the price table. Existing files are left untouched: run
+`FORCE_MARKDOWN=1 mise run generate_markdown` to regenerate every file, which is
+also the way to add the frontmatter to files generated before it existed.
+
+## Stats
+
+`markdown_stats` reads the frontmatter of every `contents/*.md` and prints global
+totals — tokens, estimated cost, processing time — with a breakdown per model and
+per language:
+
+```sh
+$ mise run markdown_stats
+contents/ — 43 file(s)
+  with frontmatter     3
+  without frontmatter  40
+
+tokens
+  input                16,134
+  cached input         16,000
+  output               14,486
+  total                30,620
+
+cost
+  estimated            $0.004120
+  unknown prices       0 file(s)
+
+processing time
+  total                395.6s
+  mean                 131.9s
+  min / max            111.8s / 165.3s
+
+generated_at
+  first                2026-09-19T08:56:54.497Z
+  last                 2026-09-19T08:57:47.976Z
+
+models
+  mimo-v2.5           3 file(s)     16,134 in /    14,486 out  $0.004120
+
+languages
+  fr                  3 file(s)     16,134 in /    14,486 out  $0.004120
+```
+
+Files without frontmatter (generated before the frontmatter existed) are counted
+but left out of the totals.
+

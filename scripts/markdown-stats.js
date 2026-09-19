@@ -1,6 +1,7 @@
-#!/usr/bin/env -S deno run --allow-read --allow-env
+#!/usr/bin/env node
 
-import { parse } from "npm:yaml@2.9.1";
+import { readFile, readdir } from "node:fs/promises";
+import { parse } from "yaml";
 import { DIR } from "./vtt.js";
 
 const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/;
@@ -48,16 +49,15 @@ function bump(map, key, { input, cached, output, cost }) {
   map.set(key, entry);
 }
 
-const names = [];
-for await (const entry of Deno.readDir(DIR)) {
-  if (entry.isFile && entry.name.endsWith(".md")) names.push(entry.name);
-}
-names.sort();
+const names = (await readdir(DIR, { withFileTypes: true }))
+  .filter((entry) => entry.isFile && entry.name.endsWith(".md"))
+  .map((entry) => entry.name)
+  .sort();
 
 for (const name of names) {
   stats.files++;
 
-  const match = FRONTMATTER.exec(await Deno.readTextFile(`${DIR}/${name}`));
+  const match = FRONTMATTER.exec(await readFile(`${DIR}/${name}`, "utf8"));
   const parsed = match ? safeParse(match[1]) : null;
   const data =
     parsed && typeof parsed === "object" && "generated_at" in parsed

@@ -1,9 +1,10 @@
-#!/usr/bin/env -S deno run --allow-read --allow-write --allow-env --allow-net=opencode.ai --allow-run=yt-dlp --allow-sys=hostname
+#!/usr/bin/env node
 
-import { createOpenAICompatible } from "npm:@ai-sdk/openai-compatible@3.0.51";
-import { APICallError, generateText } from "npm:ai@7.0.105";
-import { parseAllDocuments, stringify } from "npm:yaml@2.9.1";
-import { Listr, ListrLogger, ProcessOutput } from "npm:listr2@11.1.0";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import { APICallError, generateText } from "ai";
+import { Listr, ListrLogger, ProcessOutput } from "listr2";
+import { parseAllDocuments, stringify } from "yaml";
 import {
   DIR,
   downloadVtt,
@@ -26,19 +27,19 @@ const SYSTEM = [
   "- Output only the Markdown body.",
 ].join("\n");
 
-const apiKey = Deno.env.get("OPENAI_API_KEY");
-const modelId = Deno.env.get("OPENAIAPI_MODEL_ID");
-const endpoint = Deno.env.get("OPENAIAPI_ENDPOINT");
-const session = Deno.env.get("X_OPENCODE_SESSION");
+const apiKey = process.env.OPENAI_API_KEY;
+const modelId = process.env.OPENAIAPI_MODEL_ID;
+const endpoint = process.env.OPENAIAPI_ENDPOINT;
+const session = process.env.X_OPENCODE_SESSION;
 
 if (!apiKey) throw new Error("OPENAI_API_KEY is not set");
 if (!modelId) throw new Error("OPENAIAPI_MODEL_ID is not set");
 if (!endpoint) throw new Error("OPENAIAPI_ENDPOINT is not set");
 
-const llmConcurrency = Number(Deno.env.get("OPENAIAPI_CONCURRENCY") ?? 6);
-const vttConcurrency = Number(Deno.env.get("YTDLP_CONCURRENCY") ?? 2);
-const FORCE_MARKDOWN = Deno.env.get("FORCE_MARKDOWN") === "1";
-const RETRY_DELAYS = (Deno.env.get("OPENAIAPI_RETRY_DELAYS") ?? "10,30,60")
+const llmConcurrency = Number(process.env.OPENAIAPI_CONCURRENCY ?? 6);
+const vttConcurrency = Number(process.env.YTDLP_CONCURRENCY ?? 2);
+const FORCE_MARKDOWN = process.env.FORCE_MARKDOWN === "1";
+const RETRY_DELAYS = (process.env.OPENAIAPI_RETRY_DELAYS ?? "10,30,60")
   .split(",")
   .map((value) => value.trim())
   .filter(Boolean)
@@ -86,7 +87,7 @@ const OUTPUT_FLOOR = 2048;
 const OUTPUT_CEILING = 32768;
 
 function outputBudget(transcript) {
-  const override = Deno.env.get("OPENAIAPI_MAX_OUTPUT_TOKENS");
+  const override = process.env.OPENAIAPI_MAX_OUTPUT_TOKENS;
   if (override) return Number(override);
 
   const inputTokens = Math.ceil(transcript.length / 3.5);
@@ -255,9 +256,9 @@ async function toMarkdown(title, transcript, onRetry) {
   }
 }
 
-await Deno.mkdir(DIR, { recursive: true });
+await mkdir(DIR, { recursive: true });
 
-const docs = parseAllDocuments(await Deno.readTextFile(FEED));
+const docs = parseAllDocuments(await readFile(FEED, "utf8"));
 const jobs = [];
 
 for (const doc of docs) {
@@ -394,7 +395,7 @@ const generateTask = {
       const name = `${job.base.slice(DIR.length + 1)}.md`;
       const md = `${job.base}.md`;
       try {
-        const transcript = vttToText(await Deno.readTextFile(job.vtt));
+        const transcript = vttToText(await readFile(job.vtt, "utf8"));
         const { body, usage, finishReason, elapsed } = await toMarkdown(
           job.title,
           transcript,
@@ -419,7 +420,7 @@ const generateTask = {
         }
 
         const front = frontmatter(job, { usage, elapsed, cost, finishReason });
-        await Deno.writeTextFile(
+        await writeFile(
           md,
           `${front}# ${job.title}\n\n${hardWrap(body)}\n`,
         );

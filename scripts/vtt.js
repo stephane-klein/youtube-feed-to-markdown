@@ -1,3 +1,15 @@
+import {
+  copyFile,
+  mkdtemp,
+  readdir,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { runYtDlp } from "./ytdlp.js";
+
 export const DIR = "contents";
 
 export const slugify = (text) =>
@@ -21,63 +33,56 @@ export const titleForLang = (title, lang) => {
 
 export async function exists(path) {
   try {
-    await Deno.stat(path);
+    await stat(path);
     return true;
   } catch {
     return false;
   }
 }
 
-async function ytDlp(args) {
-  const { success } = await new Deno.Command("yt-dlp", {
-    args: ["--no-warnings", ...args],
-    stdout: "piped",
-    stderr: "null",
-  }).output();
-  return success;
-}
-
 async function findVtt(dir) {
-  for await (const entry of Deno.readDir(dir)) {
-    if (entry.isFile && entry.name.endsWith(".vtt")) {
-      return `${dir}/${entry.name}`;
-    }
-  }
-  return null;
+  const entries = await readdir(dir, { withFileTypes: true });
+  const entry = entries.find(
+    (item) => item.isFile && item.name.endsWith(".vtt"),
+  );
+  return entry ? join(dir, entry.name) : null;
 }
 
 export async function writeMarker(path, url) {
-  await Deno.writeTextFile(path, `${url}\n${new Date().toISOString()}\n`);
+  await writeFile(path, `${url}\n${new Date().toISOString()}\n`);
 }
 
 export async function downloadVtt(url, lang, dest) {
-  const tmp = await Deno.makeTempDir();
+  const tmp = await mkdtemp(join(tmpdir(), "yfmtm-"));
   let failed = false;
   try {
     for (const mode of ["--write-subs", "--write-auto-subs"]) {
-      const ok = await ytDlp([
-        "--skip-download",
-        "--sleep-requests",
-        "2",
-        mode,
-        "--sub-langs",
-        `^${lang}$`,
-        "--sub-format",
-        "vtt",
-        "-o",
-        `${tmp}/sub.%(ext)s`,
-        url,
-      ]);
-      if (!ok) failed = true;
+      const { success } = await runYtDlp(
+        [
+          "--skip-download",
+          "--sleep-requests",
+          "2",
+          mode,
+          "--sub-langs",
+          `^${lang}$`,
+          "--sub-format",
+          "vtt",
+          "-o",
+          join(tmp, "sub.%(ext)s"),
+          url,
+        ],
+        { allowFailure: true },
+      );
+      if (!success) failed = true;
       const vtt = await findVtt(tmp);
       if (vtt) {
-        await Deno.copyFile(vtt, dest);
+        await copyFile(vtt, dest);
         return "downloaded";
       }
     }
     return failed ? "error" : "missing";
   } finally {
-    await Deno.remove(tmp, { recursive: true }).catch(() => {});
+    await rm(tmp, { recursive: true, force: true });
   }
 }
 

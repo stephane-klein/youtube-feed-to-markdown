@@ -1,9 +1,11 @@
-#!/usr/bin/env -S deno run --allow-read --allow-write --allow-env --allow-run=yt-dlp
+#!/usr/bin/env node
 
-import { parseAllDocuments, stringify } from "npm:yaml@2.9.1";
+import { readFile, writeFile } from "node:fs/promises";
+import { parseAllDocuments, stringify } from "yaml";
+import { runYtDlp } from "./ytdlp.js";
 
 const FEED = "feed.yaml";
-const FORCE_DATES = Deno.env.get("FORCE_DATES") === "1";
+const FORCE_DATES = process.env.FORCE_DATES === "1";
 const DATE_CHUNK = 50;
 
 const toIso = (raw) =>
@@ -12,17 +14,8 @@ const toIso = (raw) =>
     : "";
 
 async function ytDlp(args, { allowFailure = false } = {}) {
-  const { stdout, success, code } = await new Deno.Command("yt-dlp", {
-    args: ["--no-warnings", ...args],
-    stdout: "piped",
-    stderr: "inherit",
-  }).output();
-
-  if (!success && !allowFailure) {
-    throw new Error(`yt-dlp a échoué (code ${code}) : ${args.join(" ")}`);
-  }
-
-  return new TextDecoder().decode(stdout);
+  const { stdout } = await runYtDlp(args, { stderr: "inherit", allowFailure });
+  return stdout;
 }
 
 async function uploadsPlaylistUrl(channelUrl) {
@@ -160,7 +153,7 @@ function mergeVideos(existing, fetched) {
   );
 }
 
-const docs = parseAllDocuments(await Deno.readTextFile(FEED));
+const docs = parseAllDocuments(await readFile(FEED, "utf8"));
 const rendered = [];
 
 for (const doc of docs) {
@@ -183,4 +176,4 @@ for (const doc of docs) {
   rendered.push(stringify(data, { lineWidth: 0 }).trimEnd());
 }
 
-await Deno.writeTextFile(FEED, rendered.join("\n---\n") + "\n");
+await writeFile(FEED, rendered.join("\n---\n") + "\n");

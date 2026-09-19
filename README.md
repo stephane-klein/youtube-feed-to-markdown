@@ -3,7 +3,18 @@
 I collect the videos of a few YouTube channels into `feed.yaml`, using
 [yt-dlp](https://github.com/yt-dlp/yt-dlp) to fetch the metadata.
 
+## Requirements
+
+- Node.js 22 or later;
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp) on your `PATH`.
+
+The scripts run yt-dlp with `--js-runtimes node`: solving YouTube's JavaScript
+challenges requires an external JavaScript runtime, and Node.js — already
+required here — does the job.
+
 ## Install
+
+[mise](https://mise.jdx.dev/) installs both yt-dlp and Node.js:
 
 ```sh
 $ mise install
@@ -16,6 +27,9 @@ $ mise run extract-video-metadata
 → https://www.youtube.com/@le_science4all
 → https://www.youtube.com/@MonsieurPhi
 ```
+
+The same commands are exposed as npm scripts: `npm run extract-video-metadata`,
+`npm run download-vtt`, `npm run generate-markdown` and `npm run markdown-stats`.
 
 The script reads the channel URLs from `feed.yaml`, asks yt-dlp for each
 channel's videos, and writes the result back into the file. I run it from time

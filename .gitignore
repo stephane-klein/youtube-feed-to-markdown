@@ -1,2 +1,3 @@
 contents/
 .secret.sh
+node_modules/

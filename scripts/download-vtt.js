@@ -1,13 +1,14 @@
-#!/usr/bin/env -S deno run --allow-read --allow-write --allow-env --allow-run=yt-dlp
+#!/usr/bin/env node
 
-import { parseAllDocuments } from "npm:yaml@2.9.1";
+import { mkdir, readFile } from "node:fs/promises";
+import { parseAllDocuments } from "yaml";
 import { DIR, downloadVtt, exists, videoJobs, writeMarker } from "./vtt.js";
 
 const FEED = "feed.yaml";
 
-await Deno.mkdir(DIR, { recursive: true });
+await mkdir(DIR, { recursive: true });
 
-const docs = parseAllDocuments(await Deno.readTextFile(FEED));
+const docs = parseAllDocuments(await readFile(FEED, "utf8"));
 const jobs = [];
 
 for (const doc of docs) {

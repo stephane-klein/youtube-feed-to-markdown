@@ -8,7 +8,7 @@ _.source = ".secret.sh"
 
 [tools]
 yt-dlp = "2026.08.19"
-deno = "2.9.7"
+node = "24.21.0"
 
 [tasks.extract-video-metadata]
 description = "Alimente les listes videos de feed.yaml depuis les chaînes YouTube"

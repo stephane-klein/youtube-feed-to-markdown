@@ -1,10 +1,24 @@
 import { readFile, readdir } from "node:fs/promises";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import { parse } from "yaml";
 import { DEFAULT_DIR } from "./vtt.js";
 
 const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/;
 const LANGUAGE = /\.([^./]+)\.md$/;
+
+async function markdownFiles(dir, base = dir) {
+  const entries = await readdir(dir, { withFileTypes: true });
+  const files = [];
+  for (const entry of entries) {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...(await markdownFiles(path, base)));
+    } else if (entry.isFile() && entry.name.endsWith(".md")) {
+      files.push(relative(base, path));
+    }
+  }
+  return files;
+}
 
 const numberOrNull = (value) =>
   typeof value === "number" && Number.isFinite(value) ? value : null;
@@ -52,12 +66,10 @@ export async function runMarkdownStats({ dir = DEFAULT_DIR } = {}) {
     lastGeneratedAt: null,
     models: new Map(),
     languages: new Map(),
+    folders: new Map(),
   };
 
-  const names = (await readdir(dir, { withFileTypes: true }))
-    .filter((entry) => entry.isFile && entry.name.endsWith(".md"))
-    .map((entry) => entry.name)
-    .sort();
+  const names = (await markdownFiles(dir)).sort();
 
   for (const name of names) {
     stats.files++;
@@ -111,6 +123,13 @@ export async function runMarkdownStats({ dir = DEFAULT_DIR } = {}) {
 
     bump(stats.models, llm.model ?? "unknown", { input, cached, output, cost });
     bump(stats.languages, LANGUAGE.exec(name)?.[1] ?? "unknown", {
+      input,
+      cached,
+      output,
+      cost,
+    });
+    const segments = name.split(/[\\/]/);
+    bump(stats.folders, segments.length > 1 ? segments[0] : "(root)", {
       input,
       cached,
       output,
@@ -175,6 +194,7 @@ export async function runMarkdownStats({ dir = DEFAULT_DIR } = {}) {
 
   breakdown("models", stats.models);
   breakdown("languages", stats.languages);
+  breakdown("folders", stats.folders);
 
   console.log(lines.join("\n"));
 }

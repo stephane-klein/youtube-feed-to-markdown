@@ -5,6 +5,7 @@ concurrency: "6"
 ytdlp_concurrency: "2"
 feed:
   - title: Science4All
+    folder_slug: science-4-all
     url: https://www.youtube.com/@le_science4all
     videos:
       - title:
@@ -1971,6 +1972,7 @@ feed:
         date: 2026-04-28
         url: https://www.youtube.com/watch?v=b2B8Wi6vdf4
   - title: MrPhi
+    folder_slug: mr-phi
     url: https://www.youtube.com/@MonsieurPhi
     videos:
       - title:

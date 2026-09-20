@@ -32,11 +32,11 @@ $ youtube-to-markdown extract-video-metadata
 ```
 
 `youtube-to-markdown` is a mise shell alias for `node src/cli.js`, set when you
-enter the project from an interactive bash, zsh or fish shell. It exposes four
-subcommands: `extract-video-metadata`, `download-vtt`, `generate-markdown` and
-`markdown-stats`. Run `youtube-to-markdown <command> --help` for the available
-options; in scripts and CI, call `node src/cli.js <command>` instead, since
-shell aliases are interactive-only.
+enter the project from an interactive bash, zsh or fish shell. It exposes five
+subcommands: `extract-video-metadata`, `download-vtt`, `generate-markdown`,
+`markdown-stats` and `reorganize`. Run `youtube-to-markdown <command> --help` for
+the available options; in scripts and CI, call `node src/cli.js <command>`
+instead, since shell aliases are interactive-only.
 
 The configuration file is `youtube_to_markdown.yaml` (override it with
 `--config` or `YT_TO_MD_CONFIG`). Its settings resolve in this order: command-line
@@ -65,6 +65,7 @@ concurrency: "6"
 ytdlp_concurrency: "2"
 feed:
   - title: Science4All
+    folder_slug: science-4-all
     url: https://www.youtube.com/@le_science4all
     videos:
       - title:
@@ -83,6 +84,13 @@ directory of `youtube_to_markdown.yaml`; it defaults to `contents`. Unlike the
 other settings, it can only be set in the YAML file — there is no flag or
 environment variable for it. `.gitignore` only ignores the default `contents/`,
 so add your own path there if you move it.
+
+`folder_slug` (optional, on a channel) stores that channel's transcripts and
+Markdown in a subdirectory of `contents_path`, for example `science-4-all`.
+It is a relative path, so it stays inside `contents_path`; a channel without
+`folder_slug` keeps its files at the root of `contents_path`. The reserved name
+`_orphans` is rejected. Change it whenever you like, then run
+`youtube-to-markdown reorganize` to move the existing files.
 
 ## Transcripts
 
@@ -205,11 +213,32 @@ when the model is not in the price table. Existing files are left untouched: run
 `youtube-to-markdown generate-markdown --force` to regenerate every file, which
 is also the way to add the frontmatter to files generated before it existed.
 
+## Folders
+
+A channel may set `folder_slug` to keep its files in their own subdirectory of
+`contents_path`. When you add, change or remove that setting, `reorganize` moves
+the already downloaded transcripts and generated Markdown to match. It runs for
+real by default; add `--dry-run` to preview:
+
+```sh
+$ youtube-to-markdown reorganize --dry-run
+[ 1/38] moved     science-4-all/2016-07-14_le-sol-accelere….fr.vtt (dry run)
+…
+dry run: no file was moved
+summary: 38 to move, 0 to orphan, 112 already in place, 0 conflict
+```
+
+A file that no longer matches any video of the feed is an orphan: the command
+moves it under `contents_path/_orphans/`, keeping its relative path. A file whose
+target already exists, or a filename shared by two channels with different
+`folder_slug`, is reported as a conflict and left untouched.
+
 ## Stats
 
-`markdown-stats` reads the frontmatter of every `contents/*.md` and prints global
-totals — tokens, estimated cost, processing time — with a breakdown per model and
-per language:
+`markdown-stats` reads the frontmatter of every `*.md` under `contents_path`
+(recursively) and prints global totals — tokens, estimated cost, processing
+time — with a breakdown per model, per language and per folder (`folder_slug`,
+or `(root)` when the file sits at the root of `contents_path`):
 
 ```sh
 $ youtube-to-markdown markdown-stats
@@ -241,6 +270,10 @@ models
 
 languages
   fr                  3 file(s)     16,134 in /    14,486 out  $0.004120
+
+folders
+  science-4-all       2 file(s)     10,134 in /     9,486 out  $0.002120
+  (root)              1 file(s)      6,000 in /     5,000 out  $0.002000
 ```
 
 Files without frontmatter (generated before the frontmatter existed) are counted

@@ -1,4 +1,5 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { dirname, relative } from "node:path";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { APICallError, generateText } from "ai";
 import { Listr, ListrLogger, ProcessOutput } from "listr2";
@@ -287,7 +288,7 @@ export async function runGenerateMarkdown({
   const jobs = feed.flatMap((channel) =>
     (channel.videos ?? [])
       .filter((video) => video.generate_markdown)
-      .flatMap((video) => videoJobs(video, dir)),
+      .flatMap((video) => videoJobs(video, dir, channel.folder_slug)),
   );
 
   console.error(`${jobs.length} markdown(s) to generate with ${modelId}`);
@@ -354,7 +355,7 @@ export async function runGenerateMarkdown({
       task.title = `Download transcripts (${available}/${total})`;
 
       await forEachConcurrent(items, vttConcurrency, async (job) => {
-        const name = `${job.name}.md`;
+        const name = relative(dir, `${job.base}.md`);
         try {
           if (await exists(job.marker)) {
             stats.skipped++;
@@ -362,6 +363,7 @@ export async function runGenerateMarkdown({
             return;
           }
 
+          await mkdir(dirname(job.vtt), { recursive: true });
           const status = await downloadVtt(job.url, job.lang, job.vtt);
           if (status === "missing") {
             await writeMarker(job.marker, job.url);
@@ -401,8 +403,8 @@ export async function runGenerateMarkdown({
       task.title =
         `Generate markdown (${stats.already}/${jobs.length}${already})`;
       await forEachConcurrent(items, llmConcurrency, async (job) => {
-        const name = `${job.name}.md`;
         const md = `${job.base}.md`;
+        const name = relative(dir, md);
         try {
           const transcript = vttToText(await readFile(job.vtt, "utf8"));
           const { body, usage, finishReason, elapsed } = await toMarkdown(
@@ -436,6 +438,7 @@ export async function runGenerateMarkdown({
             cost,
             finishReason,
           });
+          await mkdir(dirname(md), { recursive: true });
           await writeFile(
             md,
             `${front}# ${job.title}\n\n${hardWrap(body)}\n`,

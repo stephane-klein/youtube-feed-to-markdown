@@ -7,10 +7,35 @@ import {
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { isAbsolute, join, resolve } from "node:path";
 import { runYtDlp } from "./ytdlp.js";
 
 export const DEFAULT_DIR = resolve("contents");
+export const ORPHANS_DIR = "_orphans";
+
+export function assertFolderSlug(folderSlug) {
+  if (folderSlug === undefined || folderSlug === null || folderSlug === "") {
+    return null;
+  }
+  if (typeof folderSlug !== "string") {
+    throw new Error("folder_slug must be a string");
+  }
+
+  const segments = folderSlug.split(/[\\/]+/).filter(Boolean);
+  if (isAbsolute(folderSlug) || segments.includes("..")) {
+    throw new Error(
+      `folder_slug must be a relative path inside contents_path: ${folderSlug}`,
+    );
+  }
+  if (segments.length === 0) {
+    throw new Error("folder_slug must not be empty");
+  }
+  if (segments[0] === ORPHANS_DIR) {
+    throw new Error(`folder_slug must not be "${ORPHANS_DIR}" (reserved)`);
+  }
+
+  return segments.join("/");
+}
 
 export const slugify = (text) =>
   text
@@ -86,7 +111,8 @@ export async function downloadVtt(url, lang, dest) {
   }
 }
 
-export function videoJobs(video, dir = DEFAULT_DIR) {
+export function videoJobs(video, dir = DEFAULT_DIR, folderSlug = null) {
+  const folder = assertFolderSlug(folderSlug);
   const langs = Object.entries(video.download_vtt ?? {})
     .filter(([, on]) => on)
     .map(([lang]) => lang);
@@ -97,13 +123,12 @@ export function videoJobs(video, dir = DEFAULT_DIR) {
 
   return langs.map((lang) => {
     const name = `${video.date}_${slug}.${lang}`;
-    const base = join(dir, name);
+    const base = folder ? join(dir, folder, name) : join(dir, name);
     return {
       url: video.url,
       lang,
       title: primaryTitle(video),
       titles: video.title,
-      name,
       base,
       vtt: `${base}.vtt`,
       marker: `${base}.vtt.missing`,

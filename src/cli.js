@@ -9,6 +9,7 @@ import { runExtract } from "./extract-video-metadata.js";
 import { runDownloadVtt } from "./download-vtt.js";
 import { runGenerateMarkdown } from "./generate-markdown.js";
 import { runMarkdownStats } from "./markdown-stats.js";
+import { runReorganize } from "./organize-files.js";
 
 const { version } = createRequire(import.meta.url)("../package.json");
 
@@ -130,6 +131,20 @@ yargs(hideBin(process.argv))
     handle(async (argv) => {
       const { dir } = project(argv);
       await runMarkdownStats({ dir });
+    }),
+  )
+  .command(
+    "reorganize",
+    "Move the transcripts and Markdown into their folder_slug folders",
+    (yargs) =>
+      yargs.option("dry-run", {
+        describe: "Show the moves without doing them",
+        type: "boolean",
+        default: false,
+      }),
+    handle(async (argv) => {
+      const { feed, dir } = project(argv);
+      await runReorganize({ feed, dir, dryRun: argv.dryRun });
     }),
   )
   .demandCommand(1, "Use one of the available commands")

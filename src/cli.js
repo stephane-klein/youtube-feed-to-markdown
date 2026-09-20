@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { createRequire } from "node:module";
+import { dirname, resolve } from "node:path";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { loadConfig, loadEnv, settingsFromConfig } from "./config.js";
@@ -43,7 +44,8 @@ const project = (argv) => {
   for (const key of SETTING_KEYS) {
     if (argv[key] !== undefined) settings[key] = argv[key];
   }
-  return { path: argv.config, config: yaml, feed: yaml.feed ?? [], settings };
+  const dir = resolve(dirname(argv.config), yaml.contents_path ?? "contents");
+  return { path: argv.config, config: yaml, feed: yaml.feed ?? [], settings, dir };
 };
 
 yargs(hideBin(process.argv))
@@ -70,8 +72,8 @@ yargs(hideBin(process.argv))
     "Download the VTT transcripts of the marked videos",
     () => {},
     handle(async (argv) => {
-      const { feed } = project(argv);
-      await runDownloadVtt({ feed });
+      const { feed, dir } = project(argv);
+      await runDownloadVtt({ feed, dir });
     }),
   )
   .command(
@@ -117,15 +119,18 @@ yargs(hideBin(process.argv))
           default: false,
         }),
     handle(async (argv) => {
-      const { feed, settings } = project(argv);
-      await runGenerateMarkdown({ feed, ...settings, force: argv.force });
+      const { feed, settings, dir } = project(argv);
+      await runGenerateMarkdown({ feed, ...settings, dir, force: argv.force });
     }),
   )
   .command(
     "markdown-stats",
     "Report global tokens, cost and time from the Markdown frontmatter",
     () => {},
-    handle(runMarkdownStats),
+    handle(async (argv) => {
+      const { dir } = project(argv);
+      await runMarkdownStats({ dir });
+    }),
   )
   .demandCommand(1, "Use one of the available commands")
   .strictCommands()

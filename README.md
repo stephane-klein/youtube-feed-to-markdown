@@ -77,6 +77,13 @@ feed:
     videos: []
 ```
 
+`contents_path` (optional) chooses the directory that holds the transcripts and
+the generated Markdown. It accepts an absolute path or a path relative to the
+directory of `youtube_to_markdown.yaml`; it defaults to `contents`. Unlike the
+other settings, it can only be set in the YAML file — there is no flag or
+environment variable for it. `.gitignore` only ignores the default `contents/`,
+so add your own path there if you move it.
+
 ## Transcripts
 
 I mark the videos I want as transcripts with a `download_vtt` field:

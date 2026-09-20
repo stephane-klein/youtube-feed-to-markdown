@@ -1,11 +1,11 @@
 import { mkdir } from "node:fs/promises";
-import { DIR, downloadVtt, exists, videoJobs, writeMarker } from "./vtt.js";
+import { DEFAULT_DIR, downloadVtt, exists, videoJobs, writeMarker } from "./vtt.js";
 
-export async function runDownloadVtt({ feed = [] } = {}) {
-  await mkdir(DIR, { recursive: true });
+export async function runDownloadVtt({ feed = [], dir = DEFAULT_DIR } = {}) {
+  await mkdir(dir, { recursive: true });
 
   const jobs = feed.flatMap((channel) =>
-    (channel.videos ?? []).flatMap((video) => videoJobs(video)),
+    (channel.videos ?? []).flatMap((video) => videoJobs(video, dir)),
   );
 
   console.error(`${jobs.length} transcript(s) to check`);
@@ -18,7 +18,7 @@ export async function runDownloadVtt({ feed = [] } = {}) {
 
   for (const [index, job] of jobs.entries()) {
     const prefix = `[${String(index + 1).padStart(width)}/${jobs.length}]`;
-    const name = job.vtt.slice(DIR.length + 1);
+    const name = job.name;
 
     if (await exists(job.vtt)) {
       present++;

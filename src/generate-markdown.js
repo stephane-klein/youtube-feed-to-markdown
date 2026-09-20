@@ -4,7 +4,7 @@ import { APICallError, generateText } from "ai";
 import { Listr, ListrLogger, ProcessOutput } from "listr2";
 import { stringify } from "yaml";
 import {
-  DIR,
+  DEFAULT_DIR,
   downloadVtt,
   exists,
   titleForLang,
@@ -262,6 +262,7 @@ export async function runGenerateMarkdown({
   retryDelays = "10,30,60",
   maxOutputTokens,
   force = false,
+  dir = DEFAULT_DIR,
 } = {}) {
   const key = apiKey ?? process.env.OPENAI_API_KEY;
   if (!key) throw new Error("api key is not set (--api-key or OPENAI_API_KEY)");
@@ -281,12 +282,12 @@ export async function runGenerateMarkdown({
 
   const model = provider(modelId);
 
-  await mkdir(DIR, { recursive: true });
+  await mkdir(dir, { recursive: true });
 
   const jobs = feed.flatMap((channel) =>
     (channel.videos ?? [])
       .filter((video) => video.generate_markdown)
-      .flatMap((video) => videoJobs(video)),
+      .flatMap((video) => videoJobs(video, dir)),
   );
 
   console.error(`${jobs.length} markdown(s) to generate with ${modelId}`);
@@ -353,7 +354,7 @@ export async function runGenerateMarkdown({
       task.title = `Download transcripts (${available}/${total})`;
 
       await forEachConcurrent(items, vttConcurrency, async (job) => {
-        const name = `${job.base.slice(DIR.length + 1)}.md`;
+        const name = `${job.name}.md`;
         try {
           if (await exists(job.marker)) {
             stats.skipped++;
@@ -400,7 +401,7 @@ export async function runGenerateMarkdown({
       task.title =
         `Generate markdown (${stats.already}/${jobs.length}${already})`;
       await forEachConcurrent(items, llmConcurrency, async (job) => {
-        const name = `${job.base.slice(DIR.length + 1)}.md`;
+        const name = `${job.name}.md`;
         const md = `${job.base}.md`;
         try {
           const transcript = vttToText(await readFile(job.vtt, "utf8"));

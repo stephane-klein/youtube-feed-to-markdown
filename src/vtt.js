@@ -7,10 +7,10 @@ import {
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { runYtDlp } from "./ytdlp.js";
 
-export const DIR = "contents";
+export const DEFAULT_DIR = resolve("contents");
 
 export const slugify = (text) =>
   text
@@ -86,7 +86,7 @@ export async function downloadVtt(url, lang, dest) {
   }
 }
 
-export function videoJobs(video) {
+export function videoJobs(video, dir = DEFAULT_DIR) {
   const langs = Object.entries(video.download_vtt ?? {})
     .filter(([, on]) => on)
     .map(([lang]) => lang);
@@ -96,12 +96,14 @@ export function videoJobs(video) {
   if (!slug) return [];
 
   return langs.map((lang) => {
-    const base = `${DIR}/${video.date}_${slug}.${lang}`;
+    const name = `${video.date}_${slug}.${lang}`;
+    const base = join(dir, name);
     return {
       url: video.url,
       lang,
       title: primaryTitle(video),
       titles: video.title,
+      name,
       base,
       vtt: `${base}.vtt`,
       marker: `${base}.vtt.missing`,

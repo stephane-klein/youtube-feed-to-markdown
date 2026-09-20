@@ -1,6 +1,7 @@
 import { readFile, readdir } from "node:fs/promises";
+import { join } from "node:path";
 import { parse } from "yaml";
-import { DIR } from "./vtt.js";
+import { DEFAULT_DIR } from "./vtt.js";
 
 const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/;
 const LANGUAGE = /\.([^./]+)\.md$/;
@@ -33,7 +34,7 @@ const seconds = (value) => `${value.toFixed(1)}s`;
 const usd = (value) => `$${value.toFixed(6)}`;
 const row = (label, value) => `  ${label.padEnd(20)} ${value}`;
 
-export async function runMarkdownStats() {
+export async function runMarkdownStats({ dir = DEFAULT_DIR } = {}) {
   const stats = {
     files: 0,
     withFrontmatter: 0,
@@ -53,7 +54,7 @@ export async function runMarkdownStats() {
     languages: new Map(),
   };
 
-  const names = (await readdir(DIR, { withFileTypes: true }))
+  const names = (await readdir(dir, { withFileTypes: true }))
     .filter((entry) => entry.isFile && entry.name.endsWith(".md"))
     .map((entry) => entry.name)
     .sort();
@@ -61,7 +62,7 @@ export async function runMarkdownStats() {
   for (const name of names) {
     stats.files++;
 
-    const match = FRONTMATTER.exec(await readFile(`${DIR}/${name}`, "utf8"));
+    const match = FRONTMATTER.exec(await readFile(join(dir, name), "utf8"));
     const parsed = match ? safeParse(match[1]) : null;
     const data =
       parsed && typeof parsed === "object" && "generated_at" in parsed
@@ -118,7 +119,7 @@ export async function runMarkdownStats() {
   }
 
   const lines = [
-    `${DIR}/ — ${int.format(stats.files)} file(s)`,
+    `${dir}/ — ${int.format(stats.files)} file(s)`,
     row("with frontmatter", int.format(stats.withFrontmatter)),
     row("without frontmatter", int.format(stats.withoutFrontmatter)),
     "",

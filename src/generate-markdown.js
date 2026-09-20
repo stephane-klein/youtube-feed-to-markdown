@@ -275,7 +275,7 @@ function cleanBody(text) {
 }
 
 async function generateOnce(
-  { model, retryDelays, session, limiter },
+  { model, retryDelays, session, limiter, priceAt },
   { system, prompt, maxOutputTokens, onRetry },
 ) {
   const totalAttempts = retryDelays.length + 1;
@@ -283,8 +283,10 @@ async function generateOnce(
   for (let attempt = 1;; attempt++) {
     const started = performance.now();
     try {
-      const call = () =>
-        generateText({
+      let at;
+      const call = () => {
+        at = new Date();
+        return generateText({
           model,
           system,
           prompt,
@@ -294,12 +296,15 @@ async function generateOnce(
           maxRetries: 0,
           headers: { "X-OpenCode-Session": session },
         });
+      };
       const { text, usage, finishReason } = await (
         limiter ? limiter(call) : call()
       );
       const elapsed = (performance.now() - started) / 1000;
+      const price = priceAt ? priceAt(at) : null;
+      const cost = estimateCost(price, usage);
 
-      return { text, usage, finishReason, elapsed };
+      return { text, usage, finishReason, elapsed, price, cost };
     } catch (error) {
       if (!isRetryable(error) || attempt > retryDelays.length) {
         throw new Error(describeError(error, attempt), { cause: error });
@@ -400,6 +405,7 @@ async function toMarkdown(
     chunkTargetTokens,
     session,
     limiter,
+    priceAt,
   },
   title,
   transcript,
@@ -423,12 +429,15 @@ async function toMarkdown(
   const usages = [];
   let elapsed = 0;
   let finishReason = "stop";
+  let cost = 0;
+  let costKnown = true;
+  let price = null;
 
   await Promise.all(
     parts.map(async (part, index) => {
       onProgress?.(index + 1, total);
       const result = await generateOnce(
-        { model, retryDelays, session, limiter },
+        { model, retryDelays, session, limiter, priceAt },
         {
           system: SYSTEM,
           prompt: chunkPrompt(title, part, index, total),
@@ -439,6 +448,9 @@ async function toMarkdown(
       bodies[index] = cleanBody(result.text);
       usages.push(result.usage);
       elapsed += result.elapsed;
+      if (result.cost === null) costKnown = false;
+      else cost += result.cost;
+      if (price === null && result.price) price = result.price;
       if (result.finishReason !== "stop" && finishReason === "stop") {
         finishReason = result.finishReason;
       }
@@ -452,7 +464,7 @@ async function toMarkdown(
       if (!previousTail || !nextHead) continue;
 
       const smoothing = await generateOnce(
-        { model, retryDelays, session, limiter },
+        { model, retryDelays, session, limiter, priceAt },
         {
           system: SMOOTH_SYSTEM,
           prompt: smoothPrompt(previousTail, nextHead),
@@ -462,6 +474,9 @@ async function toMarkdown(
       );
       usages.push(smoothing.usage);
       elapsed += smoothing.elapsed;
+      if (smoothing.cost === null) costKnown = false;
+      else cost += smoothing.cost;
+      if (price === null && smoothing.price) price = smoothing.price;
       if (smoothing.finishReason === "stop") {
         const rewritten = cleanBody(smoothing.text);
         if (rewritten) {
@@ -484,6 +499,8 @@ async function toMarkdown(
     finishReason,
     elapsed,
     chunks: total,
+    cost: costKnown ? cost : null,
+    price,
   };
 }
 
@@ -581,6 +598,7 @@ export async function runGenerateMarkdown({
     : isSet(modelOutputLimit)
       ? Number(modelOutputLimit)
       : DEFAULT_CEILING;
+  const priceAt = prices ? (at) => prices.priceAt(modelId, at) : null;
   console.error(
     `output budget: up to ${ceiling} tokens per call, chunk target ${chunkTargetTokens} tokens`,
   );
@@ -660,34 +678,34 @@ export async function runGenerateMarkdown({
         const name = relative(dir, md);
         try {
           const transcript = vttToText(await readFile(job.vtt, "utf8"));
-          const price = prices ? prices.priceAt(modelId) : null;
-          const { body, usage, finishReason, elapsed, chunks } = await toMarkdown(
-            {
-              model,
-              retryDelays: RETRY_DELAYS,
-              maxOutputTokens,
-              ceiling,
-              chunkTargetTokens,
-              session: videoSession(sessionBase, job),
-              limiter,
-            },
-            job.title,
-            transcript,
-            (nextAttempt, totalAttempts, waitMs) => {
-              task.output = `retrying in ${Math.round(waitMs / 1000)}s ` +
-                `(attempt ${nextAttempt}/${totalAttempts})  ${name}`;
-            },
-            (part, totalParts) => {
-              if (totalParts > 1) {
-                task.output = `generating part ${part}/${totalParts}  ${name}`;
-              }
-            },
-          );
+          const { body, usage, finishReason, elapsed, chunks, cost, price } =
+            await toMarkdown(
+              {
+                model,
+                retryDelays: RETRY_DELAYS,
+                maxOutputTokens,
+                ceiling,
+                chunkTargetTokens,
+                session: videoSession(sessionBase, job),
+                limiter,
+                priceAt,
+              },
+              job.title,
+              transcript,
+              (nextAttempt, totalAttempts, waitMs) => {
+                task.output = `retrying in ${Math.round(waitMs / 1000)}s ` +
+                  `(attempt ${nextAttempt}/${totalAttempts})  ${name}`;
+              },
+              (part, totalParts) => {
+                if (totalParts > 1) {
+                  task.output = `generating part ${part}/${totalParts}  ${name}`;
+                }
+              },
+            );
 
           stats.totalSeconds += elapsed;
           stats.totalInput += usage?.inputTokens ?? 0;
           stats.totalOutput += usage?.outputTokens ?? 0;
-          const cost = estimateCost(price, usage);
           if (cost === null) stats.costKnown = false;
           else stats.totalCost += cost;
           const metrics = metricsLine(modelId, usage, elapsed, cost);
@@ -748,6 +766,7 @@ export {
   chunkPrompt,
   cleanBody,
   createLimiter,
+  estimateCost,
   plannedBudget,
   smoothPrompt,
   sumUsage,

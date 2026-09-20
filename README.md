@@ -13,6 +13,37 @@ channel or playlist and then to download its transcripts.
 In the final step, I use an LLM through a standard OpenAI-compatible API to
 reconstruct a complete text from the video transcripts.
 
+## AI usage in this project
+
+This project was developed using:
+
+- Harness: [OpenCode](https://opencode.ai)
+- Models: [DeepSeek-V4.1-Flash](https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash) via [OpenCode Go](https://opencode.ai/go)
+- I mostly vibe coded this project: I made the implementation, library and architecture choices, but I reviewed the code very little.
+
+The figures below cover the period from the start of the project to version 0.4.0
+([de39801](https://github.com/stephane-klein/youtube-to-markdown/commit/de39801f123fa1cfaeaa3b9cfed5071968977474)).
+
+Metrics:
+
+- 16 OpenCode sessions, 1426 interactions;
+- 11 h of human time on this project, against 4 h of AI generation time over the same period, so a human/AI time ratio of 2.75 (11 h / 4 h);
+- Cost: $2.4958;
+- Tokens:
+  - input: 7,047,916
+  - output: 421,770
+  - cache read: 228,841,600
+  - total: 236,311,286
+
+Per agent:
+
+| agent   | interactions | share | output tokens | active hours | active share | generation hours | cost   |
+|:--------|-------------:|------:|--------------:|-------------:|-------------:|-----------------:|-------:|
+| build   |          962 |   68% |       259,706 |         3.71 |          38% |             1.93 | $1.385 |
+| plan    |          450 |   32% |       155,136 |         5.91 |          61% |             2.10 | $1.098 |
+| explore |           14 |    1% |         6,928 |         0.02 |           0% |             0.02 | $0.013 |
+
+
 ## Requirements
 
 - Node.js 22 or later;
@@ -348,10 +379,10 @@ llm:
 `video_title` is the original video title in the file's language and
 `generated_at` is the UTC time of the generation. `pricing.source` names the
 catalog the rates came from and `pricing.peak` tells whether the peak rate
-applied (`null` when the source has no peak/off-peak pricing). Existing files
-are left untouched: run `youtube-to-markdown generate-markdown --force` to
-regenerate every file, which is also the way to add the frontmatter to files
-generated before it existed.
+applied to the first call (`null` when the source has no peak/off-peak pricing).
+Existing files are left untouched: run `youtube-to-markdown generate-markdown
+--force` to regenerate every file, which is also the way to add the frontmatter
+to files generated before it existed.
 
 ### Pricing
 
@@ -363,6 +394,10 @@ carries DeepSeek's peak/off-peak windows, otherwise models.dev is used. Both
 catalogs are cached for one day under `$XDG_CACHE_HOME/youtube-to-markdown`
 (`~/.cache/youtube-to-markdown` by default). When a catalog or the model is
 unavailable, `estimated_cost_usd` is `null` and the run continues.
+
+The rate is sampled at the start of every LLM call, so a run that straddles a
+peak/off-peak boundary is priced with the right rate on each side. The
+`pricing` block in the frontmatter describes the first call of the file.
 
 ## Organize the files into folders
 

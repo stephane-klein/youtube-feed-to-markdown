@@ -5,6 +5,7 @@ import {
   chunkPrompt,
   cleanBody,
   createLimiter,
+  estimateCost,
   plannedBudget,
   smoothPrompt,
   sumUsage,
@@ -62,6 +63,31 @@ test("sumUsage sums every usage field", () => {
 test("sumUsage returns null without any usage", () => {
   assert.equal(sumUsage([]), null);
   assert.equal(sumUsage([undefined]), null);
+});
+
+test("estimateCost applies the rate sampled for the call", () => {
+  const u = usage(1000000, 1000000);
+  assert.equal(
+    estimateCost({ input: 0.3, output: 1.2, cachedInput: 0 }, u),
+    1.5,
+  );
+  assert.equal(
+    estimateCost({ input: 0.15, output: 0.6, cachedInput: 0 }, u),
+    0.75,
+  );
+});
+
+test("estimateCost charges cached input tokens at the cached rate", () => {
+  const u = usage(1000000, 0, 1000000);
+  assert.equal(
+    estimateCost({ input: 0.3, output: 1.2, cachedInput: 0.03 }, u),
+    0.03,
+  );
+});
+
+test("estimateCost returns null without a price or usage", () => {
+  assert.equal(estimateCost(null, usage(1, 1)), null);
+  assert.equal(estimateCost({ input: 1, output: 1 }, null), null);
 });
 
 test("cleanBody strips code fences", () => {

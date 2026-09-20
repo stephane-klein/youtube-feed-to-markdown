@@ -173,5 +173,13 @@ export async function loadPricing({ endpoint } = {}) {
       if (entry) return litellmPrice(entry, at);
       return modelsDevPrice(provider.models?.[modelId]);
     },
+    outputLimitAt(modelId) {
+      const entry = litellm?.get(modelId);
+      const limit =
+        entry?.max_output_tokens ??
+        provider.models?.[modelId]?.limit?.output ??
+        entry?.max_tokens;
+      return typeof limit === "number" && limit > 0 ? limit : null;
+    },
   };
 }

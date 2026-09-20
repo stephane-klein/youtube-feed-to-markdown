@@ -23,6 +23,7 @@ const SETTING_KEYS = [
   "ytdlpConcurrency",
   "retryDelays",
   "maxOutputTokens",
+  "chunkTargetTokens",
 ];
 
 const handle = (run) => async (argv) => {
@@ -114,6 +115,10 @@ const cli = yargs(hideBin(process.argv))
         })
         .option("max-output-tokens", {
           describe: "Override the computed output token budget",
+          type: "number",
+        })
+        .option("chunk-target-tokens", {
+          describe: "Target input tokens per chunk when a transcript is split (default: 8000)",
           type: "number",
         })
         .option("force", {

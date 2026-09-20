@@ -14,6 +14,7 @@ const YAML_KEYS = {
   ytdlpConcurrency: "ytdlp_concurrency",
   retryDelays: "retry_delays",
   maxOutputTokens: "max_output_tokens",
+  chunkTargetTokens: "chunk_target_tokens",
 };
 
 export function settingsFromConfig(config) {
@@ -34,6 +35,7 @@ const ENV = {
   ytdlpConcurrency: "YT_TO_MD_YTDLP_CONCURRENCY",
   retryDelays: "YT_TO_MD_RETRY_DELAYS",
   maxOutputTokens: "YT_TO_MD_MAX_OUTPUT_TOKENS",
+  chunkTargetTokens: "YT_TO_MD_CHUNK_TARGET_TOKENS",
 };
 
 export function loadEnv(env = process.env) {

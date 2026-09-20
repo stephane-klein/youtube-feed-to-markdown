@@ -5,6 +5,14 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { APICallError, generateText } from "ai";
 import { Listr, ListrLogger, ProcessOutput } from "listr2";
 import { stringify } from "yaml";
+import {
+  chunkTranscript,
+  dedupeAdjacentHeadings,
+  estimateTokens,
+  firstBlock,
+  lastBlock,
+  replaceFirstBlock,
+} from "./chunk.js";
 import { loadPricing } from "./pricing.js";
 import {
   DEFAULT_DIR,
@@ -24,6 +32,15 @@ const SYSTEM = [
   "- Do not add a main title, it is provided separately.",
   "- Do not wrap the output in code fences.",
   "- Output only the Markdown body.",
+].join("\n");
+
+const SMOOTH_SYSTEM = [
+  "You improve the transition between two consecutive Markdown sections that were written independently.",
+  "- You are given the end of the previous section and the beginning of the next one.",
+  "- Rewrite ONLY the beginning of the next section so it flows naturally from the previous one.",
+  "- Keep the same language, the same facts and roughly the same length.",
+  "- Keep the Markdown formatting of the beginning.",
+  "- Output only the rewritten beginning, without any preamble or code fences.",
 ].join("\n");
 
 const WIDTH = 80;
@@ -50,18 +67,24 @@ function estimateCost(price, usage) {
 
 const OUTPUT_FACTOR = 2;
 const OUTPUT_FLOOR = 2048;
-const OUTPUT_CEILING = 32768;
+const DEFAULT_CEILING = 32768;
+const DEFAULT_CHUNK_TARGET_TOKENS = 8000;
 
-function outputBudget(transcript, override) {
-  if (override !== undefined && override !== null && override !== "") {
-    return Number(override);
-  }
+function isSet(value) {
+  return value !== undefined && value !== null && value !== "";
+}
 
-  const inputTokens = Math.ceil(transcript.length / 3.5);
+function plannedBudget(transcript, ceiling) {
+  const inputTokens = estimateTokens(transcript);
   return Math.min(
-    OUTPUT_CEILING,
+    ceiling,
     Math.max(OUTPUT_FLOOR, Math.ceil(inputTokens * OUTPUT_FACTOR)),
   );
+}
+
+function budgetForPart(text, { maxOutputTokens, ceiling }) {
+  if (isSet(maxOutputTokens)) return Number(maxOutputTokens);
+  return plannedBudget(text, ceiling);
 }
 
 function metricsLine(modelId, usage, elapsed, cost) {
@@ -77,13 +100,14 @@ function metricsLine(modelId, usage, elapsed, cost) {
     .join("  ");
 }
 
-function frontmatter(job, { modelId, usage, elapsed, cost, finishReason, price }) {
+function frontmatter(job, { modelId, usage, elapsed, cost, finishReason, price, chunks }) {
   const data = {
     source_url: job.url,
     video_title: titleForLang(job.titles, job.lang),
     generated_at: new Date().toISOString(),
     llm: {
       model: modelId,
+      chunks: chunks ?? 1,
       duration_seconds: Number(elapsed.toFixed(1)),
       input_tokens: usage?.inputTokens ?? null,
       cached_input_tokens: usage ? cachedInputTokens(usage) : null,
@@ -242,36 +266,40 @@ function videoSession(base, job) {
   return `${base || "youtube-to-markdown"}-${id}`;
 }
 
-async function toMarkdown(
-  { model, retryDelays, maxOutputTokens, session },
-  title,
-  transcript,
-  onRetry,
+function cleanBody(text) {
+  return text
+    .trim()
+    .replace(/^```[a-z]*\n?/, "")
+    .replace(/\n?```$/, "")
+    .trim();
+}
+
+async function generateOnce(
+  { model, retryDelays, session, limiter },
+  { system, prompt, maxOutputTokens, onRetry },
 ) {
   const totalAttempts = retryDelays.length + 1;
 
   for (let attempt = 1;; attempt++) {
     const started = performance.now();
     try {
-      const { text, usage, finishReason } = await generateText({
-        model,
-        system: SYSTEM,
-        prompt: `Title: ${title}\n\nTranscript:\n${transcript}`,
-        temperature: 0.2,
-        reasoning: "low",
-        maxOutputTokens: outputBudget(transcript, maxOutputTokens),
-        maxRetries: 0,
-        headers: { "X-OpenCode-Session": session },
-      });
+      const call = () =>
+        generateText({
+          model,
+          system,
+          prompt,
+          temperature: 0.2,
+          reasoning: "low",
+          maxOutputTokens,
+          maxRetries: 0,
+          headers: { "X-OpenCode-Session": session },
+        });
+      const { text, usage, finishReason } = await (
+        limiter ? limiter(call) : call()
+      );
       const elapsed = (performance.now() - started) / 1000;
 
-      const body = text
-        .trim()
-        .replace(/^```[a-z]*\n?/, "")
-        .replace(/\n?```$/, "")
-        .trim();
-
-      return { body, usage, finishReason, elapsed };
+      return { text, usage, finishReason, elapsed };
     } catch (error) {
       if (!isRetryable(error) || attempt > retryDelays.length) {
         throw new Error(describeError(error, attempt), { cause: error });
@@ -281,6 +309,182 @@ async function toMarkdown(
       await delay(waitMs);
     }
   }
+}
+
+function chunkPrompt(title, transcript, index, total) {
+  if (total <= 1) return `Title: ${title}\n\nTranscript:\n${transcript}`;
+  return [
+    `Title: ${title}`,
+    "",
+    `This is part ${index + 1} of ${total} of the transcript.`,
+    "Output only the Markdown body for this part, without the main title.",
+    "",
+    `Transcript (part ${index + 1}/${total}):`,
+    transcript,
+  ].join("\n");
+}
+
+function smoothPrompt(previousTail, nextHead) {
+  return [
+    "End of the previous section:",
+    "",
+    previousTail,
+    "",
+    "Beginning of the next section:",
+    "",
+    nextHead,
+  ].join("\n");
+}
+
+function sumUsage(usages) {
+  const present = usages.filter(Boolean);
+  if (present.length === 0) return null;
+
+  const total = {
+    inputTokens: 0,
+    outputTokens: 0,
+    totalTokens: 0,
+    inputTokenDetails: { noCacheTokens: 0, cacheReadTokens: 0 },
+    outputTokenDetails: { textTokens: 0, reasoningTokens: 0 },
+  };
+
+  for (const usage of present) {
+    total.inputTokens += usage.inputTokens ?? 0;
+    total.outputTokens += usage.outputTokens ?? 0;
+    total.totalTokens += usage.totalTokens ?? 0;
+    total.inputTokenDetails.noCacheTokens +=
+      usage.inputTokenDetails?.noCacheTokens ?? 0;
+    total.inputTokenDetails.cacheReadTokens +=
+      usage.inputTokenDetails?.cacheReadTokens ?? 0;
+    total.outputTokenDetails.textTokens +=
+      usage.outputTokenDetails?.textTokens ?? 0;
+    total.outputTokenDetails.reasoningTokens +=
+      usage.outputTokenDetails?.reasoningTokens ?? 0;
+  }
+
+  return total;
+}
+
+function createLimiter(limit) {
+  const max = Math.max(1, Number(limit) || 1);
+  let active = 0;
+  const queue = [];
+
+  const pump = () => {
+    while (active < max && queue.length > 0) {
+      active++;
+      const { task, resolve, reject } = queue.shift();
+      Promise.resolve()
+        .then(task)
+        .then(resolve, reject)
+        .finally(() => {
+          active--;
+          pump();
+        });
+    }
+  };
+
+  return (task) =>
+    new Promise((resolve, reject) => {
+      queue.push({ task, resolve, reject });
+      pump();
+    });
+}
+
+async function toMarkdown(
+  {
+    model,
+    retryDelays,
+    maxOutputTokens,
+    ceiling,
+    chunkTargetTokens,
+    session,
+    limiter,
+  },
+  title,
+  transcript,
+  onRetry,
+  onProgress,
+) {
+  const budgetCeiling = isSet(maxOutputTokens)
+    ? Number(maxOutputTokens)
+    : ceiling;
+  const desired = Math.max(
+    OUTPUT_FLOOR,
+    Math.ceil(estimateTokens(transcript) * OUTPUT_FACTOR),
+  );
+  const parts =
+    desired > budgetCeiling
+      ? chunkTranscript(transcript, { targetTokens: chunkTargetTokens })
+      : [transcript];
+
+  const total = parts.length;
+  const bodies = new Array(total);
+  const usages = [];
+  let elapsed = 0;
+  let finishReason = "stop";
+
+  await Promise.all(
+    parts.map(async (part, index) => {
+      onProgress?.(index + 1, total);
+      const result = await generateOnce(
+        { model, retryDelays, session, limiter },
+        {
+          system: SYSTEM,
+          prompt: chunkPrompt(title, part, index, total),
+          maxOutputTokens: budgetForPart(part, { maxOutputTokens, ceiling }),
+          onRetry,
+        },
+      );
+      bodies[index] = cleanBody(result.text);
+      usages.push(result.usage);
+      elapsed += result.elapsed;
+      if (result.finishReason !== "stop" && finishReason === "stop") {
+        finishReason = result.finishReason;
+      }
+    }),
+  );
+
+  if (finishReason === "stop" && total > 1) {
+    for (let index = 0; index + 1 < total; index++) {
+      const previousTail = lastBlock(bodies[index]);
+      const nextHead = firstBlock(bodies[index + 1]);
+      if (!previousTail || !nextHead) continue;
+
+      const smoothing = await generateOnce(
+        { model, retryDelays, session, limiter },
+        {
+          system: SMOOTH_SYSTEM,
+          prompt: smoothPrompt(previousTail, nextHead),
+          maxOutputTokens: plannedBudget(nextHead, budgetCeiling),
+          onRetry,
+        },
+      );
+      usages.push(smoothing.usage);
+      elapsed += smoothing.elapsed;
+      if (smoothing.finishReason === "stop") {
+        const rewritten = cleanBody(smoothing.text);
+        if (rewritten) {
+          bodies[index + 1] = replaceFirstBlock(bodies[index + 1], rewritten);
+        }
+      }
+    }
+  }
+
+  const body = dedupeAdjacentHeadings(
+    bodies
+      .join("\n\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim(),
+  );
+
+  return {
+    body,
+    usage: sumUsage(usages),
+    finishReason,
+    elapsed,
+    chunks: total,
+  };
 }
 
 async function forEachConcurrent(items, limit, worker) {
@@ -305,6 +509,7 @@ export async function runGenerateMarkdown({
   ytdlpConcurrency = 2,
   retryDelays = "10,30,60",
   maxOutputTokens,
+  chunkTargetTokens = DEFAULT_CHUNK_TARGET_TOKENS,
   force = false,
   dir = DEFAULT_DIR,
 } = {}) {
@@ -316,6 +521,7 @@ export async function runGenerateMarkdown({
   const RETRY_DELAYS = parseRetryDelays(retryDelays);
   const llmConcurrency = Number(concurrency);
   const vttConcurrency = Number(ytdlpConcurrency);
+  const limiter = createLimiter(llmConcurrency);
 
   const model = createModel({ modelId, endpoint, apiKey: key, session: sessionBase });
 
@@ -369,6 +575,15 @@ export async function runGenerateMarkdown({
   }
 
   const prices = pending.length > 0 ? await loadPricing({ endpoint }) : null;
+  const modelOutputLimit = prices?.outputLimitAt(modelId) ?? null;
+  const ceiling = isSet(maxOutputTokens)
+    ? Number(maxOutputTokens)
+    : isSet(modelOutputLimit)
+      ? Number(modelOutputLimit)
+      : DEFAULT_CEILING;
+  console.error(
+    `output budget: up to ${ceiling} tokens per call, chunk target ${chunkTargetTokens} tokens`,
+  );
 
   const downloadTask = {
     title: "Download transcripts",
@@ -446,18 +661,26 @@ export async function runGenerateMarkdown({
         try {
           const transcript = vttToText(await readFile(job.vtt, "utf8"));
           const price = prices ? prices.priceAt(modelId) : null;
-          const { body, usage, finishReason, elapsed } = await toMarkdown(
+          const { body, usage, finishReason, elapsed, chunks } = await toMarkdown(
             {
               model,
               retryDelays: RETRY_DELAYS,
               maxOutputTokens,
+              ceiling,
+              chunkTargetTokens,
               session: videoSession(sessionBase, job),
+              limiter,
             },
             job.title,
             transcript,
             (nextAttempt, totalAttempts, waitMs) => {
               task.output = `retrying in ${Math.round(waitMs / 1000)}s ` +
                 `(attempt ${nextAttempt}/${totalAttempts})  ${name}`;
+            },
+            (part, totalParts) => {
+              if (totalParts > 1) {
+                task.output = `generating part ${part}/${totalParts}  ${name}`;
+              }
             },
           );
 
@@ -482,6 +705,7 @@ export async function runGenerateMarkdown({
             cost,
             finishReason,
             price,
+            chunks,
           });
           await mkdir(dirname(md), { recursive: true });
           await writeFile(
@@ -518,3 +742,13 @@ export async function runGenerateMarkdown({
     }`,
   );
 }
+
+export {
+  budgetForPart,
+  chunkPrompt,
+  cleanBody,
+  createLimiter,
+  plannedBudget,
+  smoothPrompt,
+  sumUsage,
+};

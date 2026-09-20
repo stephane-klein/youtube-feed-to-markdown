@@ -147,8 +147,8 @@ variables, then the settings written in the YAML file, then the built-in
 defaults. The API key stays a secret: `--api-key` or `OPENAI_API_KEY`. The
 settings are `x_opencode_session`, `model_id`, `openaiapi_endpoint`,
 `concurrency` and `ytdlp_concurrency` (plus the optional `api_key`,
-`retry_delays` and `max_output_tokens`). I only set the source URLs, and the
-`extract-video-metadata` command fills the rest:
+`retry_delays`, `max_output_tokens` and `chunk_target_tokens`). I only set the
+source URLs, and the `extract-video-metadata` command fills the rest:
 
 `x_opencode_session` is the base of the `X-OpenCode-Session` header; it is
 optional and specific to OpenCode. A stable per-video suffix is appended to it,
@@ -302,6 +302,25 @@ from the server is honored when longer than the schedule. Each retry is shown in
 the phase output; after the last attempt the file is reported as an error and is
 retried on the next run.
 
+### Output budget and long transcripts
+
+The model must rewrite the whole transcript, so the command asks it for roughly
+twice the input size (`maxOutputTokens`). That budget is capped per call: the
+command reads the model's advertised output limit from the pricing catalogs and
+uses it as the ceiling; if the catalog has no entry it falls back to 32768
+tokens. `--max-output-tokens` (or `YT_TO_MD_MAX_OUTPUT_TOKENS`) overrides the
+ceiling by hand.
+
+When the projected output would exceed the ceiling — a long video on a model
+with a small output limit — the transcript is split into chunks that each fit
+the budget, generated independently, then stitched together: immediately
+repeated headings are dropped and each junction is smoothed by a small extra
+LLM call that rewrites the beginning of the next section so it flows from the
+previous one. `--chunk-target-tokens` (or `YT_TO_MD_CHUNK_TARGET_TOKENS`,
+default 8000) sets the target input size of each chunk. The generation of a
+chunk is guaranteed to stop with `stop`; otherwise the file is reported as an
+error and nothing is written. The frontmatter records how many chunks were used.
+
 ### Generated frontmatter
 
 Each generated file starts with a YAML frontmatter describing the run:
@@ -313,6 +332,7 @@ video_title: Pourquoi π est-il si fou ? Relativité 1
 generated_at: 2026-09-19T10:12:33.456Z
 llm:
   model: mimo-v2.5
+  chunks: 1
   duration_seconds: 87.1
   input_tokens: 4428
   cached_input_tokens: 0

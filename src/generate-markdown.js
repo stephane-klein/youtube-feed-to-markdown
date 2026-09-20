@@ -183,7 +183,7 @@ function retryDelayMs(error, fallbackMs) {
   return Math.max(headerMs, fallbackMs);
 }
 
-function describeError(error, attempts) {
+export function describeError(error, attempts) {
   const suffix = ` after ${attempts} attempt(s)`;
   if (!APICallError.isInstance(error)) return `${error.message}${suffix}`;
 
@@ -199,6 +199,16 @@ function parseRetryDelays(value) {
     .filter(Boolean)
     .map((item) => Number(item) * 1000)
     .filter((item) => Number.isFinite(item) && item >= 0);
+}
+
+export function createModel({ modelId, endpoint, apiKey, session }) {
+  const provider = createOpenAICompatible({
+    name: "opencode",
+    apiKey,
+    baseURL: endpoint.replace(/\/chat\/completions\/?$/, ""),
+    headers: session ? { "X-OpenCode-Session": session } : {},
+  });
+  return provider(modelId);
 }
 
 async function toMarkdown(
@@ -274,14 +284,7 @@ export async function runGenerateMarkdown({
   const llmConcurrency = Number(concurrency);
   const vttConcurrency = Number(ytdlpConcurrency);
 
-  const provider = createOpenAICompatible({
-    name: "opencode",
-    apiKey: key,
-    baseURL: endpoint.replace(/\/chat\/completions\/?$/, ""),
-    headers: session ? { "X-OpenCode-Session": session } : {},
-  });
-
-  const model = provider(modelId);
+  const model = createModel({ modelId, endpoint, apiKey: key, session });
 
   await mkdir(dir, { recursive: true });
 

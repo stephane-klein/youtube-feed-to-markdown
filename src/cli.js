@@ -10,6 +10,7 @@ import { runDownloadVtt } from "./download-vtt.js";
 import { runGenerateMarkdown } from "./generate-markdown.js";
 import { runMarkdownStats } from "./markdown-stats.js";
 import { runReorganize } from "./organize-files.js";
+import { runDoctor } from "./doctor.js";
 
 const { version } = createRequire(import.meta.url)("../package.json");
 
@@ -147,7 +148,56 @@ yargs(hideBin(process.argv))
       await runReorganize({ feed, dir, dryRun: argv.dryRun });
     }),
   )
-  .demandCommand(1, "Use one of the available commands")
+  .command(
+    "doctor",
+    "Check the runtime dependencies and the LLM access",
+    (yargs) =>
+      yargs
+        .option("model", {
+          describe: "LLM model id to test (default: model_id in the configuration)",
+          type: "string",
+        })
+        .option("endpoint", {
+          describe: "OpenAI-compatible chat completions endpoint to test",
+          type: "string",
+        })
+        .option("api-key", {
+          describe: "API key to test (defaults to OPENAI_API_KEY)",
+          type: "string",
+        })
+        .option("session", {
+          describe: "Value of the X-OpenCode-Session header",
+          type: "string",
+        })
+        .option("llm", {
+          describe: "Run a minimal LLM request to test the API access",
+          type: "boolean",
+          default: true,
+        })
+        .option("timeout", {
+          describe: "Timeout in seconds for the LLM request (default: 30)",
+          type: "number",
+          default: 30,
+        }),
+    handle(async (argv) => {
+      await runDoctor({
+        configPath: argv.config,
+        overrides: {
+          model: argv.model,
+          endpoint: argv.endpoint,
+          apiKey: argv.apiKey,
+          session: argv.session,
+        },
+        llm: argv.llm,
+        timeoutMs: argv.timeout * 1000,
+      });
+    }),
+  )
+  .demandCommand(
+    1,
+    "Use one of the available commands, or run `youtube-to-markdown doctor` " +
+      "first.",
+  )
   .strictCommands()
   .recommendCommands()
   .version(version)

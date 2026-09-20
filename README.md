@@ -28,11 +28,59 @@ Or run it without installing it, with `npx`:
 $ npx @stephane-klein/youtube-to-markdown extract-video-metadata
 ```
 
-Either way, `yt-dlp` must be on your `PATH` (see Requirements). The commands
-read `youtube_to_markdown.yaml` from the current directory unless you pass
-`--config`.
+Either way, `yt-dlp` must be on your `PATH` (see Requirements).
 
-## Run
+## Getting started
+
+**1. Create `youtube_to_markdown.yaml`** with the LLM settings and your channels.
+The example below uses [OpenCode Go](https://opencode.ai/en/go), an OpenAI-compatible API:
+
+```yaml
+x_opencode_session: "youtube-to-markdown/0.1"
+model_id: "mimo-v2.5"
+openaiapi_endpoint: "https://opencode.ai/zen/go/v1/chat/completions"
+feed:
+  - title: Science4All
+    url: https://www.youtube.com/@le_science4all
+    videos: []
+```
+
+Only the `url` is required: `extract-video-metadata` fills the titles, the dates
+and the video lists. `model_id` and `openaiapi_endpoint` are not specific to
+OpenCode Go — point them at any OpenAI-compatible provider. The other settings
+are documented below.
+
+**2. Store your API key** in `.secret.sh` and source it. Write it with your editor
+so the key never lands in your shell history:
+
+```sh
+$ $EDITOR .secret.sh
+$ cat .secret.sh
+export OPENAI_API_KEY="sk-…"
+$ source .secret.sh
+```
+
+**3. Check the setup** with `doctor` and fix every `error` (a `warn` is fine):
+
+```sh
+$ youtube-to-markdown doctor
+node      v24.21.0                                        ok
+yt-dlp    2026.08.19                                      ok
+config    youtube_to_markdown.yaml                        ok (2 channel(s), 636 video(s))
+contents  contents                                        ok
+model     mimo-v2.5                                       ok
+endpoint  https://opencode.ai/zen/go/v1/chat/completions  ok
+api key   OPENAI_API_KEY                                  ok
+session   set                                             info
+llm       1.0s                                            ok (248 in / 8 out)
+
+summary: 8 ok, 0 warning, 0 error
+```
+
+`doctor` exits with a non-zero status as soon as one line is an `error`, so it
+can gate a CI job.
+
+**4. Fetch the channel videos** into the file:
 
 ```sh
 $ youtube-to-markdown extract-video-metadata
@@ -40,28 +88,27 @@ $ youtube-to-markdown extract-video-metadata
 → https://www.youtube.com/@MonsieurPhi
 ```
 
-`youtube-to-markdown` exposes five subcommands: `extract-video-metadata`,
-`download-vtt`, `generate-markdown`, `markdown-stats` and `reorganize`. Run
-`youtube-to-markdown <command> --help` for the available options.
+The command is idempotent: a new run only adds the missing videos.
 
-The configuration file is `youtube_to_markdown.yaml` (override it with
-`--config` or `YT_TO_MD_CONFIG`). Its settings resolve in this order: command-line
-flags, then `YT_TO_MD_*` environment variables, then the settings written in the
-YAML file, then the built-in defaults. The API key stays a secret: `--api-key` or
-`OPENAI_API_KEY`.
+**5. Generate the Markdown** with `download-vtt`, then `generate-markdown`. The
+other commands are `markdown-stats`, `reorganize` and `doctor`; run
+`youtube-to-markdown <command> --help` for their options.
 
-The `extract-video-metadata` command reads the channel URLs from the
-configuration file, asks yt-dlp for each channel's videos, and writes the result
-back into the file. I run it from time to time: it is idempotent, so a new run
-only adds the videos that are missing.
+## Configure the settings and the channels
 
-## Configuration
-
-`youtube_to_markdown.yaml` holds the settings and the channels. Settings are
-`x_opencode_session`, `model_id`, `openaiapi_endpoint`, `concurrency` and
-`ytdlp_concurrency` (plus the optional `api_key`, `retry_delays` and
-`max_output_tokens`). I only set the channel URLs, and the
+The commands read `youtube_to_markdown.yaml` from the current directory; override
+it with `--config` or `YT_TO_MD_CONFIG`. It holds the settings and the channels.
+Settings resolve in this order: command-line flags, then `YT_TO_MD_*` environment
+variables, then the settings written in the YAML file, then the built-in
+defaults. The API key stays a secret: `--api-key` or `OPENAI_API_KEY`. The
+settings are `x_opencode_session`, `model_id`, `openaiapi_endpoint`,
+`concurrency` and `ytdlp_concurrency` (plus the optional `api_key`,
+`retry_delays` and `max_output_tokens`). I only set the channel URLs, and the
 `extract-video-metadata` command fills the rest:
+
+`x_opencode_session` is sent as the `X-OpenCode-Session` header; it is optional
+and specific to OpenCode. `model_id` and `openaiapi_endpoint` are not: point them
+at any OpenAI-compatible provider.
 
 ```yaml
 x_opencode_session: "youtube-to-markdown/0.1"
@@ -98,7 +145,7 @@ It is a relative path, so it stays inside `contents_path`; a channel without
 `_orphans` is rejected. Change it whenever you like, then run
 `youtube-to-markdown reorganize` to move the existing files.
 
-## Transcripts
+## Download the transcripts of the videos
 
 I mark the videos I want as transcripts with a `download_vtt` field:
 
@@ -135,7 +182,7 @@ field.
 When a video has no subtitle at all, the command writes a `<…>.vtt.missing`
 marker and stops trying. I delete that marker to force a new attempt.
 
-## Markdown
+## Generate Markdown text from the transcripts
 
 I mark the videos I want as Markdown with `generate_markdown`. The transcript is
 downloaded first if it is not there yet:
@@ -188,7 +235,7 @@ from the server is honored when longer than the schedule. Each retry is shown in
 the phase output; after the last attempt the file is reported as an error and is
 retried on the next run.
 
-### Frontmatter
+### Generated frontmatter
 
 Each generated file starts with a YAML frontmatter describing the run:
 
@@ -214,7 +261,7 @@ when the model is not in the price table. Existing files are left untouched: run
 `youtube-to-markdown generate-markdown --force` to regenerate every file, which
 is also the way to add the frontmatter to files generated before it existed.
 
-## Folders
+## Organize the files into folders
 
 A channel may set `folder_slug` to keep its files in their own subdirectory of
 `contents_path`. When you add, change or remove that setting, `reorganize` moves
@@ -234,7 +281,7 @@ moves it under `contents_path/_orphans/`, keeping its relative path. A file whos
 target already exists, or a filename shared by two channels with different
 `folder_slug`, is reported as a conflict and left untouched.
 
-## Stats
+## Report the tokens, cost and time
 
 `markdown-stats` reads the frontmatter of every `*.md` under `contents_path`
 (recursively) and prints global totals — tokens, estimated cost, processing
@@ -280,7 +327,7 @@ folders
 Files without frontmatter (generated before the frontmatter existed) are counted
 but left out of the totals.
 
-## Development
+## Set up the development environment
 
 To work on this project, [mise](https://mise.jdx.dev/) installs both yt-dlp and
 Node.js and defines the `youtube-to-markdown` shell alias; `npm install` fetches
@@ -305,7 +352,7 @@ $ cp .secret.sh.example .secret.sh
 $ $EDITOR .secret.sh
 ```
 
-## Publish
+## Publish the package to npmjs
 
 I publish the package to npmjs from this repository with mise:
 

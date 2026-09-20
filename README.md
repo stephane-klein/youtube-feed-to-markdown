@@ -7,8 +7,8 @@ I use it to search through the content of popular-science videos and shows of
 all kinds. I also use it to feed that corpus into a RAG.
 
 Technically, it is fairly simple: the project relies on
-[yt-dlp](https://github.com/yt-dlp/yt-dlp) to fetch a YouTube channel's metadata
-and then to download its transcripts.
+[yt-dlp](https://github.com/yt-dlp/yt-dlp) to fetch the metadata of a YouTube
+channel or playlist and then to download its transcripts.
 
 In the final step, I use an LLM through a standard OpenAI-compatible API to
 reconstruct a complete text from the video transcripts.
@@ -46,8 +46,8 @@ $ youtube-to-markdown --help
 youtube-to-markdown <command>
 
 Commands:
-  extract-video-metadata  Fetch the channel videos from YouTube into the
-                          configuration file
+  extract-video-metadata  Fetch the videos of each feed source (channel or
+                          playlist) from YouTube into the configuration file
   download-vtt            Download the VTT transcripts of the marked videos
   generate-markdown       Turn the VTT transcripts into Markdown prose with an
                           LLM
@@ -75,7 +75,7 @@ Use `~/.bashrc` on bash.
 
 ## Getting started
 
-**1. Create `youtube_to_markdown.yaml`** with the LLM settings and your channels.
+**1. Create `youtube_to_markdown.yaml`** with the LLM settings and your sources.
 The example below uses [OpenCode Go](https://opencode.ai/en/go), an OpenAI-compatible API:
 
 ```yaml
@@ -123,7 +123,7 @@ summary: 8 ok, 0 warning, 0 error
 `doctor` exits with a non-zero status as soon as one line is an `error`, so it
 can gate a CI job.
 
-**4. Fetch the channel videos** into the file:
+**4. Fetch the source videos** into the file:
 
 ```sh
 $ youtube-to-markdown extract-video-metadata
@@ -137,16 +137,16 @@ The command is idempotent: a new run only adds the missing videos.
 other commands are `markdown-stats`, `reorganize` and `doctor`; run
 `youtube-to-markdown <command> --help` for their options.
 
-## Configure the settings and the channels
+## Configure the settings and the sources
 
 The commands read `youtube_to_markdown.yaml` from the current directory; override
-it with `--config` or `YT_TO_MD_CONFIG`. It holds the settings and the channels.
+it with `--config` or `YT_TO_MD_CONFIG`. It holds the settings and the sources.
 Settings resolve in this order: command-line flags, then `YT_TO_MD_*` environment
 variables, then the settings written in the YAML file, then the built-in
 defaults. The API key stays a secret: `--api-key` or `OPENAI_API_KEY`. The
 settings are `x_opencode_session`, `model_id`, `openaiapi_endpoint`,
 `concurrency` and `ytdlp_concurrency` (plus the optional `api_key`,
-`retry_delays` and `max_output_tokens`). I only set the channel URLs, and the
+`retry_delays` and `max_output_tokens`). I only set the source URLs, and the
 `extract-video-metadata` command fills the rest:
 
 `x_opencode_session` is sent as the `X-OpenCode-Session` header; it is optional
@@ -181,12 +181,34 @@ other settings, it can only be set in the YAML file — there is no flag or
 environment variable for it. `.gitignore` only ignores the default `contents/`,
 so add your own path there if you move it.
 
-`folder_slug` (optional, on a channel) stores that channel's transcripts and
+`folder_slug` (optional, on a feed entry) stores that source's transcripts and
 Markdown in a subdirectory of `contents_path`, for example `science-4-all`.
-It is a relative path, so it stays inside `contents_path`; a channel without
+It is a relative path, so it stays inside `contents_path`; a source without
 `folder_slug` keeps its files at the root of `contents_path`. The reserved name
 `_orphans` is rejected. Change it whenever you like, then run
 `youtube-to-markdown reorganize` to move the existing files.
+
+## Playlists
+
+A feed entry can point to a YouTube playlist instead of a channel:
+
+```yaml
+feed:
+  - title: Contre-histoire de la philosophie, vol. 9
+    folder_slug: contre-histoire-philo-9
+    url: https://www.youtube.com/playlist?list=OLAK5uy_lEyjyS840R2OkHNVgOt1fGjPzeBTs1xKI
+    videos: []
+```
+
+The commands detect a playlist from its URL (the `/playlist` path);
+`extract-video-metadata` uses it as is instead of resolving the channel uploads
+playlist. `title` is filled with the playlist title when it is empty, and the
+videos keep the playlist order instead of being sorted by date. Each video gets
+an `index` field (`1`, `2`, …) which becomes the filename prefix:
+`contents/contre-histoire-philo-9/1-2019-01-04_quel-xixeme-siecle-i-un-temps-nouveau.fr.vtt`.
+The `index` field is written by `extract-video-metadata`; do not edit it by
+hand. A video removed from the playlist is kept as an extra, without `index`,
+at the end of the list.
 
 ## Download the transcripts of the videos
 

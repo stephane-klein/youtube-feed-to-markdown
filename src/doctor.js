@@ -86,7 +86,7 @@ async function loadConfigSafe(configPath) {
       row: {
         status: "ok",
         value: configPath,
-        note: `${channels} channel(s), ${videos} video(s)`,
+        note: `${channels} source(s), ${videos} video(s)`,
       },
     };
   } catch (error) {

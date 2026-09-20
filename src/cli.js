@@ -57,7 +57,7 @@ const cli = yargs(hideBin(process.argv))
   .option("config", config)
   .command(
     "extract-video-metadata",
-    "Fetch the channel videos from YouTube into the configuration file",
+    "Fetch the videos of each feed source (channel or playlist) from YouTube into the configuration file",
     (yargs) =>
       yargs
         .option("force-dates", {

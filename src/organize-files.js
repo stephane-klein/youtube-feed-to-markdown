@@ -43,7 +43,9 @@ function foldersByPrefix(feed) {
     for (const video of channel.videos ?? []) {
       const slug = slugify(primaryTitle(video));
       if (!video.date || !slug) continue;
-      const prefix = `${video.date}_${slug}`;
+      const prefix = Number.isInteger(video.index)
+        ? `${video.index}-${video.date}_${slug}`
+        : `${video.date}_${slug}`;
       const folders = targets.get(prefix) ?? new Set();
       folders.add(folder);
       targets.set(prefix, folders);

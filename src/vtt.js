@@ -121,8 +121,10 @@ export function videoJobs(video, dir = DEFAULT_DIR, folderSlug = null) {
   const slug = slugify(primaryTitle(video));
   if (!slug) return [];
 
+  const prefix = Number.isInteger(video.index) ? `${video.index}-` : "";
+
   return langs.map((lang) => {
-    const name = `${video.date}_${slug}.${lang}`;
+    const name = `${prefix}${video.date}_${slug}.${lang}`;
     const base = folder ? join(dir, folder, name) : join(dir, name);
     return {
       url: video.url,

@@ -32,11 +32,19 @@ async function uploadsPlaylistUrl(channelUrl) {
   return `https://www.youtube.com/playlist?list=UU${channelId.slice(2)}`;
 }
 
+const isPlaylistUrl = (url) => {
+  try {
+    return new URL(url).pathname === "/playlist";
+  } catch {
+    return false;
+  }
+};
+
 async function listEntries(playlistUrl, lang) {
   const args = [
     "--flat-playlist",
     "-O",
-    '{"titre": %(title)j, "url": %(webpage_url)j}',
+    '{"titre": %(title)j, "url": %(webpage_url)j, "playlist": %(playlist_title)j, "index": %(playlist_index)j}',
     "--extractor-args",
     `youtube:lang=${lang}`,
   ];
@@ -81,8 +89,9 @@ async function fetchExactDates(urls) {
   return dates;
 }
 
-async function fetchVideos(channelUrl, knownDates) {
-  const playlistUrl = await uploadsPlaylistUrl(channelUrl);
+async function fetchVideos(sourceUrl, knownDates) {
+  const playlist = isPlaylistUrl(sourceUrl);
+  const playlistUrl = playlist ? sourceUrl : await uploadsPlaylistUrl(sourceUrl);
   const en = await listEntries(playlistUrl, "en");
   const fr = await listEntries(playlistUrl, "fr");
   const frTitles = new Map(fr.map((entry) => [entry.url, entry.titre]));
@@ -92,11 +101,15 @@ async function fetchVideos(channelUrl, knownDates) {
     .map((entry) => {
       const enTitle = entry.titre.trim();
       const frTitle = (frTitles.get(entry.url) ?? enTitle).trim();
-      const title =
-        frTitle && enTitle && frTitle !== enTitle
-          ? { fr: frTitle, en: enTitle }
-          : { fr: frTitle || enTitle };
-      return { title, url: entry.url };
+      const video = {
+        title:
+          frTitle && enTitle && frTitle !== enTitle
+            ? { fr: frTitle, en: enTitle }
+            : { fr: frTitle || enTitle },
+        url: entry.url,
+      };
+      if (playlist && Number.isInteger(entry.index)) video.index = entry.index;
+      return video;
     });
 
   const missing = videos
@@ -109,9 +122,20 @@ async function fetchVideos(channelUrl, knownDates) {
     video.date = knownDates.get(id) ?? fetched.get(id) ?? "";
   }
 
-  return videos
-    .map((video) => ({ title: video.title, date: video.date, url: video.url }))
-    .reverse();
+  const ordered = playlist
+    ? [...videos].sort((a, b) => (a.index ?? 0) - (b.index ?? 0))
+    : [...videos].reverse();
+
+  return {
+    title: playlist ? (en[0]?.playlist ?? "") : "",
+    playlist,
+    videos: ordered.map((video) => {
+      const fields = { title: video.title, date: video.date, url: video.url };
+      return video.index !== undefined
+        ? { index: video.index, ...fields }
+        : fields;
+    }),
+  };
 }
 
 function normalizeEntry(entry) {
@@ -122,7 +146,7 @@ function normalizeEntry(entry) {
   return entry;
 }
 
-const MANAGED_KEYS = new Set(["title", "date", "url", "titre"]);
+const MANAGED_KEYS = new Set(["title", "date", "url", "titre", "index"]);
 
 function userFields(entry) {
   return Object.fromEntries(
@@ -130,7 +154,7 @@ function userFields(entry) {
   );
 }
 
-function mergeVideos(existing, fetched) {
+function mergeVideos(existing, fetched, { sort = true } = {}) {
   const existingByUrl = new Map(
     existing.filter((v) => v.url).map((v) => [v.url, v]),
   );
@@ -143,10 +167,12 @@ function mergeVideos(existing, fetched) {
   const fetchedUrls = new Set(fetched.map((v) => v.url));
   const extras = existing
     .filter((v) => v.url && !fetchedUrls.has(v.url))
-    .map(normalizeEntry);
-  return [...merged, ...extras].sort((a, b) =>
-    (a.date ?? "").localeCompare(b.date ?? ""),
-  );
+    .map(normalizeEntry)
+    .map(({ index, ...video }) => video);
+  const all = [...merged, ...extras];
+  return sort
+    ? all.sort((a, b) => (a.date ?? "").localeCompare(b.date ?? ""))
+    : all;
 }
 
 export async function runExtract({
@@ -166,10 +192,11 @@ export async function runExtract({
           .map((video) => [videoId(video.url), video.date]),
       );
     console.error(`→ ${channel.url}`);
-    channel.videos = mergeVideos(
-      videos,
-      await fetchVideos(channel.url, knownDates),
-    );
+    const fetched = await fetchVideos(channel.url, knownDates);
+    if (fetched.title && !channel.title) channel.title = fetched.title;
+    channel.videos = mergeVideos(videos, fetched.videos, {
+      sort: !fetched.playlist,
+    });
   }
 
   await writeFile(path, stringify(config, { lineWidth: 0 }));

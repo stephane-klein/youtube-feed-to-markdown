@@ -1,7 +1,7 @@
 x_opencode_session: youtube-to-markdown/0.1
 model_id: mimo-v2.5
 openaiapi_endpoint: https://opencode.ai/zen/go/v1/chat/completions
-concurrency: "6"
+concurrency: "1"
 ytdlp_concurrency: "2"
 feed:
   - title: Science4All
@@ -3217,3 +3217,699 @@ feed:
           en: Everything we know about ancient philosophy could soon change radically
         date: 2026-08-14
         url: https://www.youtube.com/watch?v=cHmLvkvLKKI
+  - title: David Cayla
+    folder_slug: david-cayla
+    url: https://www.youtube.com/@davidcayla49
+    videos:
+      - title:
+          fr: Les origines de la crise économique européenne de 2010-2013.
+        date: 2019-06-19
+        url: https://www.youtube.com/watch?v=nurQ-jxwM7s
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Les entreprises face à la financiarisation de l'économie
+        date: 2020-03-19
+        url: https://www.youtube.com/watch?v=9yhQ8RzEpk0
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: IAE 2020   Séance 1
+        date: 2020-09-16
+        url: https://www.youtube.com/watch?v=3p7-bLzT6M0
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: IAE 2020   Séance 2
+        date: 2020-09-17
+        url: https://www.youtube.com/watch?v=XKAlhfVsmz4
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: IAE 2020   Séance 3
+        date: 2020-09-23
+        url: https://www.youtube.com/watch?v=j5HPBGej3uU
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Séance 4 (début)
+        date: 2020-11-01
+        url: https://www.youtube.com/watch?v=Eoi_V3M_QdY
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Séance 4 (fin)
+        date: 2020-11-01
+        url: https://www.youtube.com/watch?v=Z4_abc1lv6o
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Séance 5 du 1er octobre (début)
+          en: Session 5 of October 1st (beginning)
+        date: 2020-11-01
+        url: https://www.youtube.com/watch?v=jb5_9c9JD8c
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Séance 5 du 1er octobre (fin)
+          en: Session 5 of October 1st (end)
+        date: 2020-11-01
+        url: https://www.youtube.com/watch?v=oeYoe-VYAlI
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Séance 7 du 8 octobre (début)
+          en: Session 7, October 8 (Part 1)
+        date: 2020-11-01
+        url: https://www.youtube.com/watch?v=sHXt0K1zIPI
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Séance 7 du 8 octobre (fin)
+        date: 2020-11-01
+        url: https://www.youtube.com/watch?v=ad3elk-yaug
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Séance 6 du 7 octobre
+          en: Session 6 of October 7
+        date: 2020-11-01
+        url: https://www.youtube.com/watch?v=hBs9VWXw96Y
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Séance 8 du 14 octobre
+        date: 2020-11-01
+        url: https://www.youtube.com/watch?v=m6IRl_xZf7w
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Séance 9 du 15 octobre (suite)
+        date: 2020-11-01
+        url: https://www.youtube.com/watch?v=SNdKszoJn8s
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Séance 9 du 15 octobre
+        date: 2020-11-01
+        url: https://www.youtube.com/watch?v=4_-qWt_4p-0
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Séance 10 du 21 octobre
+        date: 2020-11-01
+        url: https://www.youtube.com/watch?v=rNm2RV4b_Es
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Séance 11 du 22 octobre (fin)
+        date: 2020-11-01
+        url: https://www.youtube.com/watch?v=Ca9DmkJBPVo
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Séance 12 du 4 novembre
+        date: 2020-11-04
+        url: https://www.youtube.com/watch?v=rk437qgR4PY
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Séance 13 du 5 novembre
+        date: 2020-11-05
+        url: https://www.youtube.com/watch?v=cNFaPoJGOF4
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Séance 14 du jeudi 12 novembre
+        date: 2020-11-12
+        url: https://www.youtube.com/watch?v=-Q_uIl8rAdM
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Séance 15 du 18 novembre
+        date: 2020-11-18
+        url: https://www.youtube.com/watch?v=tgeKVEKflOI
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Séance 16 du jeudi 19 novembre
+        date: 2020-11-19
+        url: https://www.youtube.com/watch?v=gnRkQHAZ1XU
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Séance 17 du mercredi 25 novembre
+        date: 2020-11-25
+        url: https://www.youtube.com/watch?v=l65eo0sOAf4
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Séance 18 du jeudi 26 novembre
+        date: 2020-11-26
+        url: https://www.youtube.com/watch?v=3ABy5V14B7w
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Séance 19 du mercredi 2 décembre
+        date: 2020-12-02
+        url: https://www.youtube.com/watch?v=v8IIV9ZebzE
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Séance 20 jeudi 3 décembre
+        date: 2020-12-03
+        url: https://www.youtube.com/watch?v=TM9R4tAIAP4
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Séance 21 du mercredi 9 décembre 2020
+        date: 2020-12-09
+        url: https://www.youtube.com/watch?v=GfNOkIH_yts
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Séance 11 (début) enregistrée le 17 décembre
+        date: 2020-12-17
+        url: https://www.youtube.com/watch?v=b4Q-RVOGRvg
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: HFE Séance 1 du 29 janvier
+        date: 2021-01-29
+        url: https://www.youtube.com/watch?v=BCtATumJy58
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Histoire des faits économiques - séance 2 du 5 février
+          en: History of Economic Facts - Session 2 of February 5th
+        date: 2021-02-05
+        url: https://www.youtube.com/watch?v=eiTvkmbOWsQ
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Histoire des faits économique - Séance 3 du 12 février
+        date: 2021-02-12
+        url: https://www.youtube.com/watch?v=_JT8gmCk6WE
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: HFE   Séance 4 du 19 février
+        date: 2021-02-19
+        url: https://www.youtube.com/watch?v=NrzsdoriWZs
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: HFE   Séance 5 du 26 février
+        date: 2021-02-26
+        url: https://www.youtube.com/watch?v=ImKM4zTqNII
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: HFE -  Séance 6 du 12 mars
+        date: 2021-03-12
+        url: https://www.youtube.com/watch?v=RZH4zvyR6p4
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Séance 7 du 19 mars
+          en: Session 7 of March 19
+        date: 2021-03-19
+        url: https://www.youtube.com/watch?v=lL9SGytHNLs
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Séance 8 du 26 mars
+          en: Session 8 of March 26
+        date: 2021-03-26
+        url: https://www.youtube.com/watch?v=rI6_6kFlxb0
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: HFE Séance 9 du vendredi 2 avril
+          en: HFE Session 9, Friday, April 2nd
+        date: 2021-04-02
+        url: https://www.youtube.com/watch?v=96CNc0vgT50
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: HFE - Séance 10 du 9 avril
+        date: 2021-04-09
+        url: https://www.youtube.com/watch?v=8AecdWoS5sE
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Qu'est-ce que le néolibéralisme ?
+        date: 2021-05-29
+        url: https://www.youtube.com/watch?v=lczhA7JPjOo
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: La pensée économique contemporaine est-elle néolibérale?
+          en: Is contemporary economic thought neoliberal?
+        date: 2021-06-02
+        url: https://www.youtube.com/watch?v=tikCjpr5Who
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Les limites de la société de marché
+          en: The Limits of the Market Society
+        date: 2021-06-11
+        url: https://www.youtube.com/watch?v=g8JbEwjESsU
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: L'avènement de la gouvernance néolibérale
+        date: 2021-07-05
+        url: https://www.youtube.com/watch?v=ybt3DUugobA
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Échecs et déclin du néolibéralisme
+        date: 2021-07-17
+        url: https://www.youtube.com/watch?v=aE5dkCc7pkI
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Devils S01 E07 - Générique
+        date: 2021-08-05
+        url: https://www.youtube.com/watch?v=yxItdBD0H3I
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Échecs et déclin du néolibéralisme (version alternative)
+        date: 2021-08-09
+        url: https://www.youtube.com/watch?v=R14zFyvl8S4
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Déclin et chute du néolibéralisme
+        date: 2022-11-26
+        url: https://www.youtube.com/watch?v=bW-SMBs7Q_8
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: "Le monétarisme: une doctrine pour dépolitiser la gestion de la monnaie"
+          en: "Monetarism: a doctrine to depoliticize the management of money"
+        date: 2023-03-10
+        url: https://www.youtube.com/watch?v=Ryh6zJQ1cJA
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Les marchés financiers, la titrisation et les crédit subprimes
+          en: Financial markets, securitization, and subprime mortgages
+        date: 2023-03-16
+        url: https://www.youtube.com/watch?v=nWD6bzcz0n8
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Le néolibéralisme est-il compatible avec la transition écologiste?
+        date: 2023-03-19
+        url: https://www.youtube.com/watch?v=Yaw6r72MBus
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: La politique monétaire face à la crise des subprimes
+          en: Monetary Policy in the Face of the Subprime Mortgage Crisis
+        date: 2023-03-23
+        url: https://www.youtube.com/watch?v=McBl_XjZz5I
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Les politiques monétaires non conventionnelles. Comment le Quantitative Easing s'est imposé en 2008
+          en: "Unconventional monetary policies: How Quantitative Easing took hold in 2008"
+        date: 2023-03-30
+        url: https://www.youtube.com/watch?v=XIbRZ-kyrzQ
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: La MMT et le dilemme des banques centrales face à l'inflation
+        date: 2023-04-05
+        url: https://www.youtube.com/watch?v=VnvEOURu22Q
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Présentation de Déclin et chute du néolibéralisme
+        date: 2023-04-13
+        url: https://www.youtube.com/watch?v=-WwcE35yHtY
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: L’intégration économique européenne est-elle un facteur de désintégration sociale?
+        date: 2023-05-13
+        url: https://www.youtube.com/watch?v=LJ5s3Q8rFaw
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Qu'est ce que le néolibéralisme ?
+        date: 2023-05-27
+        url: https://www.youtube.com/watch?v=SXBhp_KsKco
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Le populisme marque-t-il la fin de la gouvernance néolibérale ?
+        date: 2023-06-03
+        url: https://www.youtube.com/watch?v=W3Mns76ihsA
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: La science économique face à la crise agricole
+        date: 2023-06-24
+        url: https://www.youtube.com/watch?v=dB_hgSdYDi4
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: La pensée économique face aux défis contemporains
+          en: Economic Thought Facing Contemporary Challenges
+        date: 2023-07-08
+        url: https://www.youtube.com/watch?v=zHNdmtUbVA4
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: "Souveraineté alimentaire: pour un nouveau modèle agricole"
+        date: 2023-07-20
+        url: https://www.youtube.com/watch?v=W0s3j9K-jTA
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Inflation, pouvoir d'achat, surprofits, quelles réponses politiques?
+        date: 2023-08-05
+        url: https://www.youtube.com/watch?v=oO3rOAdF5pI
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Le Ciel bleu des billets verts (2005)
+        date: 2023-08-19
+        url: https://www.youtube.com/watch?v=UTYj-fOyyNI
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Interview pour Punch mars 2020
+        date: 2023-09-02
+        url: https://www.youtube.com/watch?v=9CzmLWeHtWw
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Les 15 ans de la faillite de Lehman Brothers
+          en: 15 Years After the Collapse of Lehman Brothers
+        date: 2023-09-18
+        url: https://www.youtube.com/watch?v=0IXcoP1-FBw
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Comment reconstruire l'économie sur de nouvelles bases?
+        date: 2023-09-27
+        url: https://www.youtube.com/watch?v=eg-TCx_Ra2E
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Quelles perspectives économiques à l'heure du féminicène ?
+        date: 2023-10-04
+        url: https://www.youtube.com/watch?v=jBJbwqyVtvA
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: 50 ans de massification universitaire... et après ?
+        date: 2023-10-17
+        url: https://www.youtube.com/watch?v=iAR6izUGbrQ
+        download_vtt:
+          fr: true
+        generate_markdown:
+          fr: true
+      - title:
+          fr: Comment mettre l'économie au service de la démocratie ?
+        date: 2023-11-18
+        url: https://www.youtube.com/watch?v=qCiFg-Zc1bc
+      - title:
+          fr: La colère des agriculteurs. Émission BFM TV du 20 janvier 2024.
+        date: 2024-01-21
+        url: https://www.youtube.com/watch?v=z7K2kwXJ9jA
+      - title:
+          fr: 1- Limites et vertus du PIB
+        date: 2024-03-16
+        url: https://www.youtube.com/watch?v=_0daxjrhH-U
+      - title:
+          fr: 2024 03 20   La Nature et les mystères de la monnaie
+        date: 2024-03-23
+        url: https://www.youtube.com/watch?v=b7Npp8PzOYE
+      - title:
+          fr: 3- La théorie économique et la gestion des ressources
+          en: 3- Economic theory and resource management
+        date: 2024-03-30
+        url: https://www.youtube.com/watch?v=Uwxok1YQAiw
+      - title:
+          fr: 4- La valeur du climat et les limites de la quantification
+        date: 2024-04-06
+        url: https://www.youtube.com/watch?v=8WoCL6F-LIw
+      - title:
+          fr: 5- Croissance verte, décroissance ou social-écologie ?
+          en: 5- Green growth, degrowth or social ecology?
+        date: 2024-04-13
+        url: https://www.youtube.com/watch?v=go7i9vhmsMg
+      - title:
+          fr: 6 - Peut-on rendre le capitalisme compatible avec la transition écologique ?
+        date: 2024-04-20
+        url: https://www.youtube.com/watch?v=mqtlqNSvETA
+      - title:
+          fr: Les politiques monétaires confrontées aux crises financières
+        date: 2024-08-18
+        url: https://www.youtube.com/watch?v=_8gKx4vQIZY
+      - title:
+          fr: La gauche peut-elle combattre le néolibéralisme ?
+        date: 2024-10-09
+        url: https://www.youtube.com/watch?v=mSBfQIoeFr4
+      - title:
+          fr: Discussion avec Georges Kuzmanovic (République souveraine)
+        date: 2024-10-19
+        url: https://www.youtube.com/watch?v=mPjPbUHaPKU
+      - title:
+          fr: "Neoliberalism at a Crossroads: Crises, Popular Discontent, and the Future of Global Policies"
+        date: 2024-10-22
+        url: https://www.youtube.com/watch?v=Au8aL3KvCik
+      - title:
+          fr: La Gauche peut-elle combattre le néolibéralisme ?
+        date: 2024-10-26
+        url: https://www.youtube.com/watch?v=FlisDgXkRlo
+      - title:
+          fr: "Budget 2025: la récession au bout du tunnel?"
+        date: 2025-02-15
+        url: https://www.youtube.com/watch?v=9V75BMe1MGM
+      - title:
+          fr: Pourquoi la gauche échoue-t-elle ?
+          en: Why does the Left fail?
+        date: 2025-02-22
+        url: https://www.youtube.com/watch?v=thKKnbjp6Vg
+      - title:
+          fr: Les principes du néolibéralisme face à la crise écologique
+        date: 2025-03-01
+        url: https://www.youtube.com/watch?v=DHhtLleFA8c
+      - title:
+          fr: Une agriculture au service de la souveraineté alimentaire
+        date: 2025-03-08
+        url: https://www.youtube.com/watch?v=-t8h3K1y1xY
+      - title:
+          fr: Les paradoxes de la crise du logement
+        date: 2025-03-15
+        url: https://www.youtube.com/watch?v=iih9PZQ89EI
+      - title:
+          fr: Repenser les objectifs du management
+          en: Rethinking management objectives
+        date: 2025-03-22
+        url: https://www.youtube.com/watch?v=rtZRM2F6ATA
+      - title:
+          fr: Peut-on changer la monnaie et la finance ?
+        date: 2025-03-29
+        url: https://www.youtube.com/watch?v=IIEkeBrTzDM
+      - title:
+          fr: Une nouvelle mondialisation financière et commerciale ?
+          en: A new globalization of finance and trade?
+        date: 2025-04-05
+        url: https://www.youtube.com/watch?v=4KAj5TYTbCo
+      - title:
+          fr: Marx et le libre-échange. Réflexions sur la politique commerciale.
+          en: "Marx and Free Trade: Reflections on Trade Policy."
+        date: 2025-04-12
+        url: https://www.youtube.com/watch?v=tji-7WkHVrE
+      - title:
+          fr: Fonctionnement et dysfonctionnements du marché européen de l'électricité
+          en: How the European Electricity Market Works and Where It Fails
+        date: 2025-04-19
+        url: https://www.youtube.com/watch?v=qGhoDurP1Yw
+      - title:
+          fr: Dette publique, création monétaire et transition écologique
+        date: 2025-04-26
+        url: https://www.youtube.com/watch?v=NNuyUPRobmc
+      - title:
+          fr: Pourquoi la gauche échoue-t-elle aux élections ?
+          en: Why does the left fail in elections?
+        date: 2025-12-20
+        url: https://www.youtube.com/watch?v=pZXzyExB_bc
+      - title:
+          fr: Conversation sur le commerce international
+          en: Conversation on International Trade
+        date: 2026-01-03
+        url: https://www.youtube.com/watch?v=LpYU0_5kryo
+      - title:
+          fr: Conférence sur la désindustrialisation française
+          en: Conference on French Deindustrialization
+        date: 2026-02-07
+        url: https://www.youtube.com/watch?v=VOgMfdqPsZ8
+      - title:
+          fr: Bitcoin, l'utopie libertarienne de la monnaie
+          en: Bitcoin, the libertarian utopia of money
+        date: 2026-04-04
+        url: https://www.youtube.com/watch?v=VM3nnHe3KqY
+      - title:
+          fr: 1/4 La décroissance, une critique philosophique de l'économie politique
+          en: "1/4 Degrowth: A Philosophical Critique of Political Economy"
+        date: 2026-05-10
+        url: https://www.youtube.com/watch?v=FaAX6egkVho
+      - title:
+          fr: 2/4 La Crise climatique rend-elle indispensable la décroissance ?
+          en: 2/4 Does the climate crisis make degrowth indispensable?
+        date: 2026-05-14
+        url: https://www.youtube.com/watch?v=TEBYnMh67ek
+      - title:
+          fr: 3/4 La Décroissance une critique de la technologie et du développement
+          en: "3/4 Degrowth: A Critique of Technology and Development"
+        date: 2026-05-23
+        url: https://www.youtube.com/watch?v=X4KszLZbttA
+      - title:
+          fr: 4/4 Les limites sociales et démocratiques de la décroissance
+          en: 4/4 The social and democratic limits of degrowth
+        date: 2026-05-30
+        url: https://www.youtube.com/watch?v=vEFLgt7T-hI
+      - title:
+          fr: Justice sociale, justice fiscale
+          en: Social justice, fiscal justice
+        date: 2026-06-06
+        url: https://www.youtube.com/watch?v=d6d8n6FHq5w

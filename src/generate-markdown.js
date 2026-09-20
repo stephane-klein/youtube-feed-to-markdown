@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, relative } from "node:path";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
@@ -211,8 +212,17 @@ export function createModel({ modelId, endpoint, apiKey, session }) {
   return provider(modelId);
 }
 
+function videoSession(base, job) {
+  const id = createHash("sha256")
+    .update(`${job.url}#${job.lang}`)
+    .digest("hex")
+    .slice(0, 16);
+  return `${base || "youtube-to-markdown"}-${id}`;
+}
+
 async function toMarkdown(
   { model, retryDelays, maxOutputTokens },
+  { model, retryDelays, maxOutputTokens, session },
   title,
   transcript,
   onRetry,
@@ -229,6 +239,7 @@ async function toMarkdown(
         temperature: 0.2,
         maxOutputTokens: outputBudget(transcript, maxOutputTokens),
         maxRetries: 0,
+        headers: { "X-OpenCode-Session": session },
       });
       const elapsed = (performance.now() - started) / 1000;
 
@@ -267,7 +278,7 @@ export async function runGenerateMarkdown({
   model: modelId,
   endpoint,
   apiKey,
-  session,
+  sessionBase,
   concurrency = 6,
   ytdlpConcurrency = 2,
   retryDelays = "10,30,60",
@@ -284,7 +295,7 @@ export async function runGenerateMarkdown({
   const llmConcurrency = Number(concurrency);
   const vttConcurrency = Number(ytdlpConcurrency);
 
-  const model = createModel({ modelId, endpoint, apiKey: key, session });
+  const model = createModel({ modelId, endpoint, apiKey: key, session: sessionBase });
 
   await mkdir(dir, { recursive: true });
 
@@ -411,7 +422,12 @@ export async function runGenerateMarkdown({
         try {
           const transcript = vttToText(await readFile(job.vtt, "utf8"));
           const { body, usage, finishReason, elapsed } = await toMarkdown(
-            { model, retryDelays: RETRY_DELAYS, maxOutputTokens },
+            {
+              model,
+              retryDelays: RETRY_DELAYS,
+              maxOutputTokens,
+              session: videoSession(sessionBase, job),
+            },
             job.title,
             transcript,
             (nextAttempt, totalAttempts, waitMs) => {

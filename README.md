@@ -47,6 +47,7 @@ Commands:
   reorganize              Move the transcripts and Markdown into their
                           folder_slug folders
   doctor                  Check the runtime dependencies and the LLM access
+  completion              Generate a shell completion script for bash or zsh
 
 Options:
   --config   Path to the YAML configuration file
@@ -54,6 +55,14 @@ Options:
   --version  Show version number                                       [boolean]
   --help     Show help                                                 [boolean]
 ```
+
+Install the shell completion for bash or zsh (`$SHELL` selects the script):
+
+```sh
+$ youtube-to-markdown completion >> ~/.zshrc
+```
+
+Use `~/.bashrc` on bash.
 
 ## Getting started
 
@@ -355,18 +364,20 @@ but left out of the totals.
 ## Set up the development environment
 
 To work on this project, [mise](https://mise.jdx.dev/) installs both yt-dlp and
-Node.js and defines the `youtube-to-markdown` shell alias; `npm install` fetches
-the JavaScript dependencies:
+Node.js; `npm install` fetches the JavaScript dependencies:
 
 ```sh
 $ mise install
 $ npm install
 ```
 
-The shell alias maps `youtube-to-markdown` to `node src/cli.js`. It is set when
-you enter the project from an interactive bash, zsh or fish shell, so it is only
-available in interactive shells; in scripts and CI, call
-`node src/cli.js <command>` instead.
+The `enter` hook defines a `youtube-to-markdown` shell function that calls
+`node src/cli.js`, and loads the shell completion for bash and zsh; the `leave`
+hook removes both. Everything is set when you enter the project from an
+interactive bash or zsh shell, so it is only available in interactive shells; in
+scripts and CI, call `node src/cli.js <command>` instead. A function, rather than
+a shell alias, is what lets `youtube-to-markdown <TAB>` complete the subcommands:
+zsh expands aliases before dispatching completion, which would bypass `compdef`.
 
 To generate Markdown without exporting `OPENAI_API_KEY` in your shell, copy
 `.secret.sh.example` to `.secret.sh` and put your API key in it; mise sources

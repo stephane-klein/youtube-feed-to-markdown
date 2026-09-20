@@ -1,8 +1,29 @@
 [env]
 _.source = ".secret.sh"
 
-[shell_alias]
-youtube-to-markdown = "node {{config_root | quote}}/src/cli.js"
+[[hooks.enter]]
+shell = "zsh"
+script = [
+  "unalias youtube-to-markdown 2>/dev/null || true",
+  "youtube-to-markdown() { node {{config_root | quote}}/src/cli.js \"$@\"; }",
+  "source <(SHELL=/bin/zsh node {{config_root | quote}}/src/cli.js completion)",
+]
+
+[[hooks.enter]]
+shell = "bash"
+script = [
+  "unalias youtube-to-markdown 2>/dev/null || true",
+  "youtube-to-markdown() { node {{config_root | quote}}/src/cli.js \"$@\"; }",
+  "source <(SHELL=/bin/bash node {{config_root | quote}}/src/cli.js completion)",
+]
+
+[[hooks.leave]]
+shell = "zsh"
+script = "unalias youtube-to-markdown 2>/dev/null || true; unfunction youtube-to-markdown 2>/dev/null; unfunction _youtube-to-markdown_yargs_completions 2>/dev/null; compdef -d youtube-to-markdown 2>/dev/null"
+
+[[hooks.leave]]
+shell = "bash"
+script = "unalias youtube-to-markdown 2>/dev/null || true; unset -f youtube-to-markdown 2>/dev/null; complete -r youtube-to-markdown 2>/dev/null"
 
 [tools]
 yt-dlp = "2026.08.19"

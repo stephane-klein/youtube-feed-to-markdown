@@ -50,7 +50,7 @@ const project = (argv) => {
   return { path: argv.config, config: yaml, feed: yaml.feed ?? [], settings, dir };
 };
 
-yargs(hideBin(process.argv))
+const cli = yargs(hideBin(process.argv))
   .scriptName("")
   .usage("youtube-to-markdown <command>")
   .config(loadEnv())
@@ -194,6 +194,12 @@ yargs(hideBin(process.argv))
       });
     }),
   )
+  .command(
+    "completion",
+    "Generate a shell completion script for bash or zsh",
+    () => {},
+    () => cli.showCompletionScript("youtube-to-markdown", "completion"),
+  )
   .demandCommand(
     1,
     "Use one of the available commands, or run `youtube-to-markdown doctor` " +
@@ -202,5 +208,6 @@ yargs(hideBin(process.argv))
   .strictCommands()
   .recommendCommands()
   .version(version)
-  .help()
-  .parse();
+  .help();
+
+cli.parse();

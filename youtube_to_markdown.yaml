@@ -1,6 +1,8 @@
 x_opencode_session: youtube-to-markdown/0.1
-model_id: mimo-v2.5
-openaiapi_endpoint: https://opencode.ai/zen/go/v1/chat/completions
+# model_id: mimo-v2.5
+# openaiapi_endpoint: https://opencode.ai/zen/go/v1/chat/completions
+model_id: deepseek-flash
+openaiapi_endpoint: https://api.deepseek.com/chat/completions
 concurrency: "1"
 ytdlp_concurrency: "2"
 feed:

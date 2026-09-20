@@ -115,9 +115,10 @@ model     mimo-v2.5                                       ok
 endpoint  https://opencode.ai/zen/go/v1/chat/completions  ok
 api key   OPENAI_API_KEY                                  ok
 session   set                                             info
+pricing   models.dev                                      ok ($0.14 in / $0.28 out / $0.0028 cached per 1M)
 llm       1.0s                                            ok (248 in / 8 out)
 
-summary: 8 ok, 0 warning, 0 error
+summary: 9 ok, 0 warning, 0 error
 ```
 
 `doctor` exits with a non-zero status as soon as one line is an `error`, so it
@@ -149,9 +150,10 @@ settings are `x_opencode_session`, `model_id`, `openaiapi_endpoint`,
 `retry_delays` and `max_output_tokens`). I only set the source URLs, and the
 `extract-video-metadata` command fills the rest:
 
-`x_opencode_session` is sent as the `X-OpenCode-Session` header; it is optional
-and specific to OpenCode. `model_id` and `openaiapi_endpoint` are not: point them
-at any OpenAI-compatible provider.
+`x_opencode_session` is the base of the `X-OpenCode-Session` header; it is
+optional and specific to OpenCode. A stable per-video suffix is appended to it,
+so each video is routed as its own conversation. `model_id` and
+`openaiapi_endpoint` are not: point them at any OpenAI-compatible provider.
 
 ```yaml
 x_opencode_session: "youtube-to-markdown/0.1"
@@ -317,14 +319,30 @@ llm:
   output_tokens: 3262
   estimated_cost_usd: 0.000927
   finish_reason: stop
+  pricing:
+    source: models.dev
+    peak: null
 ---
 ```
 
 `video_title` is the original video title in the file's language and
-`generated_at` is the UTC time of the generation. `estimated_cost_usd` is `null`
-when the model is not in the price table. Existing files are left untouched: run
-`youtube-to-markdown generate-markdown --force` to regenerate every file, which
-is also the way to add the frontmatter to files generated before it existed.
+`generated_at` is the UTC time of the generation. `pricing.source` names the
+catalog the rates came from and `pricing.peak` tells whether the peak rate
+applied (`null` when the source has no peak/off-peak pricing). Existing files
+are left untouched: run `youtube-to-markdown generate-markdown --force` to
+regenerate every file, which is also the way to add the frontmatter to files
+generated before it existed.
+
+### Pricing
+
+The estimated cost uses rates fetched at run time from
+[models.dev](https://models.dev) and
+[LiteLLM](https://github.com/BerriAI/litellm). The provider is resolved from
+`openaiapi_endpoint`; LiteLLM is preferred when it prices the model, because it
+carries DeepSeek's peak/off-peak windows, otherwise models.dev is used. Both
+catalogs are cached for one day under `$XDG_CACHE_HOME/youtube-to-markdown`
+(`~/.cache/youtube-to-markdown` by default). When a catalog or the model is
+unavailable, `estimated_cost_usd` is `null` and the run continues.
 
 ## Organize the files into folders
 

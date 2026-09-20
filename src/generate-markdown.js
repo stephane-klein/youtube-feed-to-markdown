@@ -5,6 +5,7 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { APICallError, generateText } from "ai";
 import { Listr, ListrLogger, ProcessOutput } from "listr2";
 import { stringify } from "yaml";
+import { loadPricing } from "./pricing.js";
 import {
   DEFAULT_DIR,
   downloadVtt,
@@ -27,17 +28,12 @@ const SYSTEM = [
 
 const WIDTH = 80;
 
-const PRICES = {
-  "mimo-v2.5": { input: 0.14, output: 0.28, cachedInput: 0.0028 }
-};
-
 function cachedInputTokens(usage) {
   const details = usage?.inputTokenDetails ?? {};
   return details.cacheReadTokens ?? usage?.cachedInputTokens ?? 0;
 }
 
-function estimateCost(modelId, usage) {
-  const price = PRICES[modelId];
+function estimateCost(price, usage) {
   if (!price || !usage) return null;
 
   const details = usage.inputTokenDetails ?? {};
@@ -81,7 +77,7 @@ function metricsLine(modelId, usage, elapsed, cost) {
     .join("  ");
 }
 
-function frontmatter(job, { modelId, usage, elapsed, cost, finishReason }) {
+function frontmatter(job, { modelId, usage, elapsed, cost, finishReason, price }) {
   const data = {
     source_url: job.url,
     video_title: titleForLang(job.titles, job.lang),
@@ -94,6 +90,7 @@ function frontmatter(job, { modelId, usage, elapsed, cost, finishReason }) {
       output_tokens: usage?.outputTokens ?? null,
       estimated_cost_usd: cost === null ? null : Number(cost.toFixed(6)),
       finish_reason: finishReason,
+      pricing: price ? { source: price.source, peak: price.peak } : null,
     },
   };
 
@@ -202,12 +199,37 @@ function parseRetryDelays(value) {
     .filter((item) => Number.isFinite(item) && item >= 0);
 }
 
+function convertUsage(usage) {
+  const prompt = usage?.prompt_tokens ?? 0;
+  const completion = usage?.completion_tokens ?? 0;
+  const cacheRead =
+    usage?.prompt_cache_hit_tokens ??
+    usage?.prompt_tokens_details?.cached_tokens ??
+    0;
+  const reasoning = usage?.completion_tokens_details?.reasoning_tokens ?? 0;
+  return {
+    inputTokens: {
+      total: prompt,
+      noCache: Math.max(prompt - cacheRead, 0),
+      cacheRead,
+      cacheWrite: undefined,
+    },
+    outputTokens: {
+      total: completion,
+      text: Math.max(completion - reasoning, 0),
+      reasoning,
+    },
+    raw: usage,
+  };
+}
+
 export function createModel({ modelId, endpoint, apiKey, session }) {
   const provider = createOpenAICompatible({
     name: "opencode",
     apiKey,
     baseURL: endpoint.replace(/\/chat\/completions\/?$/, ""),
     headers: session ? { "X-OpenCode-Session": session } : {},
+    convertUsage,
   });
   return provider(modelId);
 }
@@ -221,7 +243,6 @@ function videoSession(base, job) {
 }
 
 async function toMarkdown(
-  { model, retryDelays, maxOutputTokens },
   { model, retryDelays, maxOutputTokens, session },
   title,
   transcript,
@@ -237,6 +258,7 @@ async function toMarkdown(
         system: SYSTEM,
         prompt: `Title: ${title}\n\nTranscript:\n${transcript}`,
         temperature: 0.2,
+        reasoning: "low",
         maxOutputTokens: outputBudget(transcript, maxOutputTokens),
         maxRetries: 0,
         headers: { "X-OpenCode-Session": session },
@@ -346,6 +368,8 @@ export async function runGenerateMarkdown({
     else pending.push(job);
   }
 
+  const prices = pending.length > 0 ? await loadPricing({ endpoint }) : null;
+
   const downloadTask = {
     title: "Download transcripts",
     rendererOptions: phaseOptions,
@@ -421,6 +445,7 @@ export async function runGenerateMarkdown({
         const name = relative(dir, md);
         try {
           const transcript = vttToText(await readFile(job.vtt, "utf8"));
+          const price = prices ? prices.priceAt(modelId) : null;
           const { body, usage, finishReason, elapsed } = await toMarkdown(
             {
               model,
@@ -439,7 +464,7 @@ export async function runGenerateMarkdown({
           stats.totalSeconds += elapsed;
           stats.totalInput += usage?.inputTokens ?? 0;
           stats.totalOutput += usage?.outputTokens ?? 0;
-          const cost = estimateCost(modelId, usage);
+          const cost = estimateCost(price, usage);
           if (cost === null) stats.costKnown = false;
           else stats.totalCost += cost;
           const metrics = metricsLine(modelId, usage, elapsed, cost);
@@ -456,6 +481,7 @@ export async function runGenerateMarkdown({
             elapsed,
             cost,
             finishReason,
+            price,
           });
           await mkdir(dirname(md), { recursive: true });
           await writeFile(

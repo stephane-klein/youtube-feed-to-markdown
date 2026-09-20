@@ -3,6 +3,7 @@ import { dirname, resolve } from "node:path";
 import { generateText } from "ai";
 import { loadConfig, settingsFromConfig } from "./config.js";
 import { createModel, describeError } from "./generate-markdown.js";
+import { loadPricing } from "./pricing.js";
 import { exists } from "./vtt.js";
 import { runYtDlp } from "./ytdlp.js";
 
@@ -141,6 +142,31 @@ async function checkLlm({ llm, settings, key, timeoutMs }) {
   }
 }
 
+async function checkPricing({ settings }) {
+  if (!settings.endpoint) {
+    return { status: "warn", value: "-", note: "endpoint not set" };
+  }
+  if (!settings.model) {
+    return { status: "warn", value: "-", note: "model not set" };
+  }
+
+  const pricing = await loadPricing({ endpoint: settings.endpoint });
+  if (!pricing) return { status: "warn", value: "-", note: "no pricing source" };
+
+  const price = pricing.priceAt(settings.model);
+  if (!price) {
+    return { status: "warn", value: pricing.provider, note: "model not priced" };
+  }
+
+  const peak = price.peak === null ? "" : price.peak ? " (peak)" : " (off-peak)";
+  const usd = (value) => (typeof value === "number" ? `$${value}` : "-");
+  return {
+    status: "ok",
+    value: `${price.source}${peak}`,
+    note: `${usd(price.input)} in / ${usd(price.output)} out / ${usd(price.cachedInput)} cached per 1M`,
+  };
+}
+
 function render(rows) {
   const labelWidth = Math.max(...rows.map((row) => row.label.length));
   const valueWidth = Math.max(...rows.map((row) => row.value.length));
@@ -192,6 +218,7 @@ export async function runDoctor({
   if (settings.session) {
     rows.push({ label: "session", value: "set", status: "info", note: null });
   }
+  rows.push({ label: "pricing", ...(await checkPricing({ settings })) });
   const llmRow = await checkLlm({ llm, settings, key, timeoutMs });
   rows.push({ label: "llm", ...llmRow });
 

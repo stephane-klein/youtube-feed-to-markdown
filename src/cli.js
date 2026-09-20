@@ -51,7 +51,8 @@ const project = (argv) => {
 };
 
 yargs(hideBin(process.argv))
-  .scriptName("youtube-to-markdown")
+  .scriptName("")
+  .usage("youtube-to-markdown <command>")
   .config(loadEnv())
   .option("config", config)
   .command(

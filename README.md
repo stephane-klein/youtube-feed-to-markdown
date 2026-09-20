@@ -30,6 +30,31 @@ $ npx @stephane-klein/youtube-to-markdown extract-video-metadata
 
 Either way, `yt-dlp` must be on your `PATH` (see Requirements).
 
+Run `youtube-to-markdown --help` to list the available commands:
+
+```sh
+$ youtube-to-markdown --help
+youtube-to-markdown <command>
+
+Commands:
+  extract-video-metadata  Fetch the channel videos from YouTube into the
+                          configuration file
+  download-vtt            Download the VTT transcripts of the marked videos
+  generate-markdown       Turn the VTT transcripts into Markdown prose with an
+                          LLM
+  markdown-stats          Report global tokens, cost and time from the Markdown
+                          frontmatter
+  reorganize              Move the transcripts and Markdown into their
+                          folder_slug folders
+  doctor                  Check the runtime dependencies and the LLM access
+
+Options:
+  --config   Path to the YAML configuration file
+                                  [string] [default: "youtube_to_markdown.yaml"]
+  --version  Show version number                                       [boolean]
+  --help     Show help                                                 [boolean]
+```
+
 ## Getting started
 
 **1. Create `youtube_to_markdown.yaml`** with the LLM settings and your channels.

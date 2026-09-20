@@ -1,7 +1,8 @@
 # youtube-feed-to-markdown
 
 I collect the videos of a few YouTube channels into `youtube_to_markdown.yaml`,
-using [yt-dlp](https://github.com/yt-dlp/yt-dlp) to fetch the metadata.
+using [yt-dlp](https://github.com/yt-dlp/yt-dlp) to fetch the metadata. It is
+published on npmjs as `@stephane-klein/youtube-to-markdown`.
 
 ## Requirements
 
@@ -14,14 +15,22 @@ required here — does the job.
 
 ## Install
 
-[mise](https://mise.jdx.dev/) installs both yt-dlp and Node.js and defines the
-`youtube-to-markdown` shell alias; `npm install` fetches the JavaScript
-dependencies:
+The package is published on npmjs as `@stephane-klein/youtube-to-markdown`.
+Install it globally to get the `youtube-to-markdown` command on your `PATH`:
 
 ```sh
-$ mise install
-$ npm install
+$ npm install -g @stephane-klein/youtube-to-markdown
 ```
+
+Or run it without installing it, with `npx`:
+
+```sh
+$ npx @stephane-klein/youtube-to-markdown extract-video-metadata
+```
+
+Either way, `yt-dlp` must be on your `PATH` (see Requirements). The commands
+read `youtube_to_markdown.yaml` from the current directory unless you pass
+`--config`.
 
 ## Run
 
@@ -31,12 +40,9 @@ $ youtube-to-markdown extract-video-metadata
 → https://www.youtube.com/@MonsieurPhi
 ```
 
-`youtube-to-markdown` is a mise shell alias for `node src/cli.js`, set when you
-enter the project from an interactive bash, zsh or fish shell. It exposes five
-subcommands: `extract-video-metadata`, `download-vtt`, `generate-markdown`,
-`markdown-stats` and `reorganize`. Run `youtube-to-markdown <command> --help` for
-the available options; in scripts and CI, call `node src/cli.js <command>`
-instead, since shell aliases are interactive-only.
+`youtube-to-markdown` exposes five subcommands: `extract-video-metadata`,
+`download-vtt`, `generate-markdown`, `markdown-stats` and `reorganize`. Run
+`youtube-to-markdown <command> --help` for the available options.
 
 The configuration file is `youtube_to_markdown.yaml` (override it with
 `--config` or `YT_TO_MD_CONFIG`). Its settings resolve in this order: command-line
@@ -141,13 +147,8 @@ downloaded first if it is not there yet:
       fr: true
 ```
 
-Before the first run, create `.secret.sh` from `.secret.sh.example` and put your
-API key in it; mise sources that file automatically:
-
-```sh
-$ cp .secret.sh.example .secret.sh
-$ $EDITOR .secret.sh
-```
+Before the first run, provide your API key through the `OPENAI_API_KEY`
+environment variable, or pass it with `--api-key`.
 
 Then:
 
@@ -278,4 +279,46 @@ folders
 
 Files without frontmatter (generated before the frontmatter existed) are counted
 but left out of the totals.
+
+## Development
+
+To work on this project, [mise](https://mise.jdx.dev/) installs both yt-dlp and
+Node.js and defines the `youtube-to-markdown` shell alias; `npm install` fetches
+the JavaScript dependencies:
+
+```sh
+$ mise install
+$ npm install
+```
+
+The shell alias maps `youtube-to-markdown` to `node src/cli.js`. It is set when
+you enter the project from an interactive bash, zsh or fish shell, so it is only
+available in interactive shells; in scripts and CI, call
+`node src/cli.js <command>` instead.
+
+To generate Markdown without exporting `OPENAI_API_KEY` in your shell, copy
+`.secret.sh.example` to `.secret.sh` and put your API key in it; mise sources
+that file automatically:
+
+```sh
+$ cp .secret.sh.example .secret.sh
+$ $EDITOR .secret.sh
+```
+
+## Publish
+
+I publish the package to npmjs from this repository with mise:
+
+```sh
+$ npm login
+$ npm version patch
+$ mise run publish-to-npmjs
+```
+
+`npm login` authenticates against npmjs, once per machine. `npm version patch`
+bumps the version and creates the matching git tag (use `minor` or `major` for
+larger changes). `mise run publish-to-npmjs` first checks the authentication with
+`npm whoami`, then runs `npm publish`; it publishes the version written in
+`package.json`, so bump it first. The package is scoped, so `publishConfig` in
+`package.json` forces public access.
 

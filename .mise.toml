@@ -7,3 +7,12 @@ youtube-to-markdown = "node {{config_root | quote}}/src/cli.js"
 [tools]
 yt-dlp = "2026.08.19"
 node = "24.21.0"
+
+[tasks.publish-to-npmjs]
+description = "Publish the package to npmjs"
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+npm whoami
+npm publish
+"""

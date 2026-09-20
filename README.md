@@ -1,8 +1,17 @@
 # youtube-feed-to-markdown
 
-I collect the videos of a few YouTube channels into `youtube_to_markdown.yaml`,
-using [yt-dlp](https://github.com/yt-dlp/yt-dlp) to fetch the metadata. It is
-published on npmjs as `@stephane-klein/youtube-to-markdown`.
+The `youtube-to-markdown` CLI generates Markdown files from YouTube video
+transcripts.
+
+I use it to search through the content of popular-science videos and shows of
+all kinds. I also use it to feed that corpus into a RAG.
+
+Technically, it is fairly simple: the project relies on
+[yt-dlp](https://github.com/yt-dlp/yt-dlp) to fetch a YouTube channel's metadata
+and then to download its transcripts.
+
+In the final step, I use an LLM through a standard OpenAI-compatible API to
+reconstruct a complete text from the video transcripts.
 
 ## Requirements
 
